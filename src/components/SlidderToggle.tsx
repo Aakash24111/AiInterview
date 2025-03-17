@@ -8,7 +8,7 @@ const TOGGLE_CLASSES =
   "text-sm font-medium flex items-center gap-2 px-3 md:pl-3 md:pr-3.5 py-3 md:py-1.5 transition-colors relative z-10";
 
 export default function SliderToggle() {
-  const [theme, setTheme] = useState<"light" | "dark" | null>(null); // Avoid SSR issues
+  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -16,7 +16,7 @@ export default function SliderToggle() {
   }, []);
 
   useEffect(() => {
-    if (!theme) return; // Avoid SSR mismatch before state is set
+    if (!theme) return; 
     document.documentElement.classList.toggle("dark", theme === "dark");
     document.body.classList.toggle("bg-slate-900", theme === "dark");
     document.body.classList.toggle("text-white", theme === "dark");
@@ -25,7 +25,7 @@ export default function SliderToggle() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  if (theme === null) return null; // Prevent hydration mismatch
+  if (theme === null) return null; 
 
   return (
     <div className="relative flex w-fit items-center rounded-full">
