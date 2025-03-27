@@ -1,0 +1,17 @@
+services:
+  neo4j:
+    image: neo4j:5.12.0-community
+    container_name: neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - ./app/graph_database/data:/data
+      - ./app/graph_database/logs:/logs
+      - ./app/graph_database/import:/import
+      - ./app/graph_database/plugins:/plugins
+    # env_file:
+    #   - ./app/.env
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4JLABS_PLUGINS=["apoc"]

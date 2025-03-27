@@ -1,0 +1,7 @@
+I built a semantic search engine in my internship that was powered by LLM , so i scrapped flipkart products and then I processed it using NLP by getting rid of stopwords , frequently appearing words so that it wont affect the embeddings and tfidf , since we were using hybrid search. So lets say typical semantic search engines in e com website are not that smart , if you tell them I am going to a marraige , they wont exactly suggest the products related to your query , but in out project it does.
+
+We used hybrid search mainly because of the ranking part , embeddings didnt provide good ranking of the products , the keyword search helped in reran
+king of the products in an efficient manner
+
+I have a good amount of experience with RAG as well , for example YOU , you are an AI based interviewer , I literally created you using RAG, embedding my resume
+ and making you interview me.

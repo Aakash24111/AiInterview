@@ -1,0 +1,11 @@
+langchain
+langgraph
+langchain-community
+langchain-groq
+langchain-huggingface
+langchain-experimental
+langchain-neo4j
+neo4j
+faiss-cpu
+asyncio
+pypdf
