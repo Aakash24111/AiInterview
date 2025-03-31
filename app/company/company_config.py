@@ -1,6 +1,7 @@
 from app.prompts.prompts import (
-    skills_prompt,projects_prompt,work_exp_prompt,education_prompt,introduction_prompt
+    skills_prompt,projects_prompt,work_exp_prompt,education_prompt,introduction_prompt,summary_prompt,condn_prompt,attr_prompt
 )
+from app.logger.logger_config import logger
 
 class Company_Config:
     def __init__(self,company_id):
@@ -25,12 +26,20 @@ class Company_Config:
         self.edu_prompt=education_prompt.partial(company_name=self.company_name,job_role=self.job_role,job_description=self.job_description)
         self.work_exp_prompt=work_exp_prompt.partial(company_name=self.company_name,job_role=self.job_role,job_description=self.job_description)
         self.projects_prompt=projects_prompt.partial(company_name=self.company_name,job_role=self.job_role,job_description=self.job_description)
-    
+        self.summary_prompt=summary_prompt.partial(job_role=self.job_role,company_name=self.company_name)
+        self.condn_prompt=condn_prompt.partial(job_role=self.job_role,job_description=self.job_description)
+        self.attr_prompt=attr_prompt.partial(job_role=self.job_role,job_description=self.job_description)
+        logger.info(f'Company-{company_id} Initialised')
+        
     def get_prompts(self):
+        logger.info("Returning prompts")
         return {
             "intro":self.intro_prompt,
             "skills":self.skills_prompt,
             "edu":self.edu_prompt,
             "projects":self.projects_prompt,
-            "work_exp":self.work_exp_prompt
+            "work_exp":self.work_exp_prompt,
+            "summ":self.summary_prompt,
+            "condn":self.condn_prompt,
+            "attr":self.attr_prompt
         }

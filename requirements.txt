@@ -9,3 +9,4 @@ neo4j
 faiss-cpu
 asyncio
 pypdf
+motor
