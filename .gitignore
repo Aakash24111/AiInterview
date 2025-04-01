@@ -13,3 +13,4 @@ app/data
 # app/data/negative
 lfw-deepfunneled/
 app/application_data
+app/face_model/*.pth
