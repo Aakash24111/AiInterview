@@ -14,7 +14,7 @@ class JobTypeEnum(PyEnum):
 class JobService(Base):
     __tablename__ = "job_services"
 
-    job_id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, primary_key=True, index=True,autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.company_id"), nullable=False)
     job_description = Column(Text, nullable=False)
     job_location = Column(String, nullable=False)
