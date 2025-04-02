@@ -1,42 +1,3 @@
-// import JobCard from "@/components/JobCard"
-// export default function Home() {
-//   return (
-//     <div className="grid grid-col-1 sm:grid-cols-1 xl:grid-cols-3 h-screen justify-center items-start gap-6 p-10 ">
-//       <JobCard
-//         companyLogo="/google.png"
-//         jobTitle="Frontend Developer"
-//         companyName="Google"
-//         experience="2-3 Years"
-//         salary="₹20,000 - ₹30,000"
-//         jobType="Full-time"
-//         location="Mumbai"
-//         tags={["Frontend", "Full-time", "React", "Remote", "Mumbai"]}
-//       />
-//       <JobCard
-//         companyLogo="/microsoft.png"
-//         jobTitle="Backend Developer"
-//         companyName="Microsoft"
-//         experience="7-8 years"
-//         salary="₹50,000 - ₹60,000"
-//         jobType="Full-time"
-//         location="Mumbai"
-//         tags={["Backend", "Full-time", "Java", "Remote", "Mumbai"]}
-//       />
-//       <JobCard
-//         companyLogo="/amazon.png"
-//         jobTitle="Full Stack Developer"
-//         companyName="Amazon"
-//         experience="2-3 Years"
-//         salary="₹20,000 - ₹30,000"
-//         jobType="Full-time"
-//         location="Mumbai"
-//         tags={["Frontend", "Full-time", "React", "Remote", "Mumbai"]}
-//       />
-//     </div>
-//   );
-// }
-
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -45,85 +6,27 @@ import SearchBar from "@/components/search-bar"
 import FilterSection from "@/components/filter-section"
 import { Button } from "@/components/ui/button"
 import { Briefcase } from "lucide-react"
+import { jobsData } from "@/components/interview/data" 
 
-
-const jobsData = [
-  {
-    id: 1,
-    companyLogo: "/google.png",
-    jobTitle: "Frontend Developer",
-    companyName: "Google",
-    experience: "2-3 Years",
-    salary: "₹20,000 - ₹30,000",
-    jobType: "Full-time",
-    location: "Mumbai",
-    tags: ["Frontend", "React", "JavaScript", "Remote"],
-  },
-  {
-    id: 2,
-    companyLogo: "/microsoft.png",
-    jobTitle: "Backend Developer",
-    companyName: "Microsoft",
-    experience: "7-8 years",
-    salary: "₹50,000 - ₹60,000",
-    jobType: "Full-time",
-    location: "Mumbai",
-    tags: ["Backend", "Java", "Spring", "Remote"],
-  },
-  {
-    id: 3,
-    companyLogo: "/amazon.png",
-    jobTitle: "Full Stack Developer",
-    companyName: "Amazon",
-    experience: "2-3 Years",
-    salary: "₹20,000 - ₹30,000",
-    jobType: "Full-time",
-    location: "Mumbai",
-    tags: ["Frontend", "Backend", "React", "Node.js", "Remote"],
-  },
-  {
-    id: 4,
-    companyLogo: "/facebook.png",
-    jobTitle: "UI/UX Designer",
-    companyName: "Facebook",
-    experience: "3-5 Years",
-    salary: "₹40,000 - ₹50,000",
-    jobType: "Contract",
-    location: "Bangalore",
-    tags: ["UI", "UX", "Figma", "Adobe XD", "Hybrid"],
-  },
-  {
-    id: 5,
-    companyLogo: "/netflix.png",
-    jobTitle: "DevOps Engineer",
-    companyName: "Netflix",
-    experience: "4-6 Years",
-    salary: "₹60,000 - ₹80,000",
-    jobType: "Part-time",
-    location: "Delhi",
-    tags: ["DevOps", "AWS", "Docker", "Kubernetes", "On-site"],
-  },
-  {
-    id: 6,
-    companyLogo: "/iq.jpg",
-    jobTitle: "iOS Developer",
-    companyName: "Apple",
-    experience: "5-7 Years",
-    salary: "₹70,000 - ₹90,000",
-    jobType: "Full-time",
-    location: "Hyderabad",
-    tags: ["iOS", "Swift", "Objective-C", "Remote"],
-  },
-]
-
-// Extract unique filter options
-const extractFilters = (): {
+// Define interfaces for better type safety
+interface FilterOptions {
   jobTypes: string[];
   locations: string[];
-  experienceRange: [number, number]; // ✅ Ensure it's a tuple
-  salaryRange: [number, number]; // ✅ Ensure it's a tuple
+  experienceRange: [number, number]; 
+  salaryRange: [number, number]; 
   skills: string[];
-} => {
+}
+
+interface SelectedFilters {
+  jobTypes: string[];
+  locations: string[];
+  experienceRange: [number, number];
+  salaryRange: [number, number];
+  skills: string[];
+}
+
+// Extract unique filter options
+const extractFilters = (): FilterOptions => {
   const jobTypes = Array.from(new Set(jobsData.map((job) => job.jobType)));
   const locations = Array.from(new Set(jobsData.map((job) => job.location)));
   const skills = Array.from(new Set(jobsData.flatMap((job) => job.tags)));
@@ -131,28 +34,21 @@ const extractFilters = (): {
   return {
     jobTypes,
     locations,
-    experienceRange: [0, 15] as [number, number], // ✅ Explicit tuple
-    salaryRange: [0, 100] as [number, number], // ✅ Explicit tuple
+    experienceRange: [0, 15] as [number, number], 
+    salaryRange: [0, 100] as [number, number], 
     skills,
   };
 };
 
-
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [filters, setFilters] = useState(extractFilters())
-  const [selectedFilters, setSelectedFilters] = useState<{
-    jobTypes: string[];
-    locations: string[];
-    experienceRange: [number, number]; 
-    salaryRange: [number, number]; 
-    skills: string[];
-  }>({
-    jobTypes: [],
-    locations: [],
-    experienceRange: [0, 15],
-    salaryRange: [0, 100], 
-    skills: [],
+  const [filters, setFilters] = useState<FilterOptions>(extractFilters())
+  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({
+    jobTypes: [] as string[],
+    locations: [] as string[],
+    experienceRange: [0, 15] as [number, number],
+    salaryRange: [0, 100] as [number, number],
+    skills: [] as string[],
   });  
   const [filteredJobs, setFilteredJobs] = useState(jobsData)
 
@@ -160,28 +56,24 @@ export default function Home() {
   useEffect(() => {
     let result = jobsData
 
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(
         (job) =>
           job.jobTitle.toLowerCase().includes(query) ||
           job.companyName.toLowerCase().includes(query) ||
-          job.tags.some((tag) => tag.toLowerCase().includes(query)),
+          job.tags.some((tag) => tag.toLowerCase().includes(query))
       )
     }
 
-    // Filter by job type
     if (selectedFilters.jobTypes.length > 0) {
       result = result.filter((job) => selectedFilters.jobTypes.includes(job.jobType))
     }
 
-    // Filter by location
     if (selectedFilters.locations.length > 0) {
       result = result.filter((job) => selectedFilters.locations.includes(job.location))
     }
 
-    // Filter by experience
     result = result.filter((job) => {
       const expRange = job.experience.match(/\d+/g)
       if (expRange && expRange.length >= 1) {
@@ -191,7 +83,6 @@ export default function Home() {
       return true
     })
 
-    // Filter by salary
     result = result.filter((job) => {
       const salaryRange = job.salary.match(/\d+/g)
       if (salaryRange && salaryRange.length >= 1) {
@@ -201,7 +92,6 @@ export default function Home() {
       return true
     })
 
-    // Filter by skills
     if (selectedFilters.skills.length > 0) {
       result = result.filter((job) => selectedFilters.skills.some((skill) => job.tags.includes(skill)))
     }
@@ -211,16 +101,12 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background">
-
-      {/* Main content */}
       <div className="container mx-auto py-8 px-4 md:px-6">
-        {/* Search bar */}
         <div className="mb-8">
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Filters sidebar */}
           <div className="w-full md:w-64 flex-shrink-0">
             <FilterSection
               filters={filters}
@@ -229,31 +115,26 @@ export default function Home() {
             />
           </div>
 
-          {/* Job listings */}
           <div className="flex-1">
-          <div className="mb-4 flex items-center justify-between">
-  <h2 className="text-lg font-medium">{filteredJobs.length} Jobs Available</h2>
-  <div className="flex items-center gap-2">
-    <span className="text-sm text-muted-foreground">Sort by:</span>
-    <select
-      className="text-sm border rounded-md px-2 py-1 transition-all
-        bg-white text-black border-gray-300 
-        dark:bg-gray-800 dark:text-white dark:border-gray-600"
-    >
-      <option className="dark:bg-gray-900 dark:text-white">Relevance</option>
-      <option className="dark:bg-gray-900 dark:text-white">Latest</option>
-      <option className="dark:bg-gray-900 dark:text-white">Salary: High to Low</option>
-      <option className="dark:bg-gray-900 dark:text-white">Salary: Low to High</option>
-    </select>
-  </div>
-</div>
-
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-medium">{filteredJobs.length} Jobs Available</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Sort by:</span>
+                <select className="text-sm border rounded-md px-2 py-1 transition-all bg-white text-black border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-600">
+                  <option className="dark:bg-gray-900 dark:text-white">Relevance</option>
+                  <option className="dark:bg-gray-900 dark:text-white">Latest</option>
+                  <option className="dark:bg-gray-900 dark:text-white">Salary: High to Low</option>
+                  <option className="dark:bg-gray-900 dark:text-white">Salary: Low to High</option>
+                </select>
+              </div>
+            </div>
 
             {filteredJobs.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredJobs.map((job) => (
                   <JobCard
                     key={job.id}
+                    id={job.id}
                     companyLogo={job.companyLogo}
                     jobTitle={job.jobTitle}
                     companyName={job.companyName}
@@ -277,4 +158,3 @@ export default function Home() {
     </main>
   )
 }
-
