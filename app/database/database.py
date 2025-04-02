@@ -8,6 +8,7 @@ client=AsyncIOMotorClient(MONGO_URL)
 db=client['Interviews']
 interviews=db['interviews']
 user_interviews=db['user_interviews']
+company_interviews=db['company_interviews']
 
 def get_db_collections():
-    return interviews,user_interviews
+    return interviews,user_interviews,company_interviews
