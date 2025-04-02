@@ -29,13 +29,22 @@ export default function Home() {
     }
   }, [])
 
- 
+  const toggleDarkMode = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove("dark")
+      localStorage.theme = "light"
+      setIsDarkMode(false)
+    } else {
+      document.documentElement.classList.add("dark")
+      localStorage.theme = "dark"
+      setIsDarkMode(true)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
-        
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:grid lg:grid-cols-12 lg:gap-8">
@@ -55,22 +64,43 @@ export default function Home() {
                 <span className="block text-blue-600 dark:text-blue-400">Interview with AI</span>
               </h1>
               <p className="mt-6 text-xl text-gray-600 dark:text-gray-300">
-              Give real interviews tailored to your resume and target job. Get real-time feedback to boost your chances of landing your dream role.
+                Practice interviews tailored to your resume and the job you want. Get real-time feedback and improve
+                your chances of landing your dream job.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
                 <SignedOut>
-                  <SignInButton mode="modal">
-                    <Button size="lg" className="gap-2">
-                      Get Started <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </SignInButton>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <SignInButton mode="modal">
+                      <Button size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700">
+                        Sign In as Candidate <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </SignInButton>
+                    <SignInButton mode="modal">
+                      <Button size="lg" className="gap-2 bg-green-600 hover:bg-green-700">
+                        Sign In as Recruiter <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </SignInButton>
+                  </div>
                 </SignedOut>
                 <SignedIn>
-                  <Button size="lg" onClick={() => router.push("/interview")} className="gap-2">
-                    Start Your Interview <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button
+                      size="lg"
+                      onClick={() => router.push("/interview")}
+                      className="gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      Candidate Dashboard <ArrowRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={() => router.push("/recruiter")}
+                      className="gap-2 bg-green-600 hover:bg-green-700"
+                    >
+                      Recruiter Dashboard <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </SignedIn>
-                <Button variant="outline" size="lg" asChild>
+                <Button variant="outline" size="lg" asChild className="mt-4 sm:mt-0">
                   <a href="#how-it-works">Learn More</a>
                 </Button>
               </div>
@@ -239,9 +269,10 @@ export default function Home() {
                 <div className="flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 mx-auto">
                   <span className="text-2xl font-bold">3</span>
                 </div>
-                <h3 className="mt-6 text-xl font-bold">Showcase Your Skills & Get Noticed</h3>
+                <h3 className="mt-6 text-xl font-bold">Get Feedback & Improve</h3>
                 <p className="mt-2 text-gray-600 dark:text-gray-300">
-                Your interview recordings are saved, allowing recruiters or hiring managers to review and select candidates based on real performance
+                  Receive detailed feedback on your performance and practice until you're confident for your real
+                  interview.
                 </p>
               </div>
             </div>
@@ -266,7 +297,7 @@ export default function Home() {
             </TabsList>
 
             <TabsContent value="monthly">
-              <div className="grid gap-8 lg:grid-cols-3">
+              <div className="grid gap-8 lg:grid-cols-3 ">
                 {/* Basic Plan */}
                 <Card className="border-0 shadow-lg bg-white dark:bg-gray-700">
                   <CardHeader>
@@ -297,14 +328,27 @@ export default function Home() {
                   </CardContent>
                   <CardFooter>
                     <SignedOut>
-                      <SignInButton mode="modal">
-                        <Button className="w-full">Get Started</Button>
-                      </SignInButton>
+                      <div className="w-full space-y-2">
+                        <SignInButton mode="modal">
+                          <Button className="w-full">Sign In as Candidate</Button>
+                        </SignInButton>
+                        <SignInButton mode="modal">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                        </SignInButton>
+                      </div>
                     </SignedOut>
                     <SignedIn>
-                      <Button className="w-full" onClick={() => router.push("/interview")}>
-                        Access Now
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Button className="w-full" onClick={() => router.push("/interview")}>
+                          Candidate Access
+                        </Button>
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push("/recruiter")}
+                        >
+                          Recruiter Access
+                        </Button>
+                      </div>
                     </SignedIn>
                   </CardFooter>
                 </Card>
@@ -346,14 +390,27 @@ export default function Home() {
                   </CardContent>
                   <CardFooter>
                     <SignedOut>
-                      <SignInButton mode="modal">
-                        <Button className="w-full">Get Started</Button>
-                      </SignInButton>
+                      <div className="w-full space-y-2">
+                        <SignInButton mode="modal">
+                          <Button className="w-full">Sign In as Candidate</Button>
+                        </SignInButton>
+                        <SignInButton mode="modal">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                        </SignInButton>
+                      </div>
                     </SignedOut>
                     <SignedIn>
-                      <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
-                        Upgrade Now
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
+                          Candidate Access
+                        </Button>
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push("/recruiter")}
+                        >
+                          Recruiter Access
+                        </Button>
+                      </div>
                     </SignedIn>
                   </CardFooter>
                 </Card>
@@ -396,14 +453,27 @@ export default function Home() {
                   </CardContent>
                   <CardFooter>
                     <SignedOut>
-                      <SignInButton mode="modal">
-                        <Button className="w-full">Contact Sales</Button>
-                      </SignInButton>
+                      <div className="w-full space-y-2">
+                        <SignInButton mode="modal">
+                          <Button className="w-full">Sign In as Candidate</Button>
+                        </SignInButton>
+                        <SignInButton mode="modal">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                        </SignInButton>
+                      </div>
                     </SignedOut>
                     <SignedIn>
-                      <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
-                        Contact Sales
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
+                          Candidate Access
+                        </Button>
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push("/recruiter")}
+                        >
+                          Recruiter Access
+                        </Button>
+                      </div>
                     </SignedIn>
                   </CardFooter>
                 </Card>
@@ -442,14 +512,27 @@ export default function Home() {
                   </CardContent>
                   <CardFooter>
                     <SignedOut>
-                      <SignInButton mode="modal">
-                        <Button className="w-full">Get Started</Button>
-                      </SignInButton>
+                      <div className="w-full space-y-2">
+                        <SignInButton mode="modal">
+                          <Button className="w-full">Sign In as Candidate</Button>
+                        </SignInButton>
+                        <SignInButton mode="modal">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                        </SignInButton>
+                      </div>
                     </SignedOut>
                     <SignedIn>
-                      <Button className="w-full" onClick={() => router.push("/interview")}>
-                        Access Now
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Button className="w-full" onClick={() => router.push("/interview")}>
+                          Candidate Access
+                        </Button>
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push("/recruiter")}
+                        >
+                          Recruiter Access
+                        </Button>
+                      </div>
                     </SignedIn>
                   </CardFooter>
                 </Card>
@@ -491,14 +574,27 @@ export default function Home() {
                   </CardContent>
                   <CardFooter>
                     <SignedOut>
-                      <SignInButton mode="modal">
-                        <Button className="w-full">Get Started</Button>
-                      </SignInButton>
+                      <div className="w-full space-y-2">
+                        <SignInButton mode="modal">
+                          <Button className="w-full">Sign In as Candidate</Button>
+                        </SignInButton>
+                        <SignInButton mode="modal">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                        </SignInButton>
+                      </div>
                     </SignedOut>
                     <SignedIn>
-                      <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
-                        Upgrade Now
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
+                          Candidate Access
+                        </Button>
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push("/recruiter")}
+                        >
+                          Recruiter Access
+                        </Button>
+                      </div>
                     </SignedIn>
                   </CardFooter>
                 </Card>
@@ -541,14 +637,27 @@ export default function Home() {
                   </CardContent>
                   <CardFooter>
                     <SignedOut>
-                      <SignInButton mode="modal">
-                        <Button className="w-full">Contact Sales</Button>
-                      </SignInButton>
+                      <div className="w-full space-y-2">
+                        <SignInButton mode="modal">
+                          <Button className="w-full">Sign In as Candidate</Button>
+                        </SignInButton>
+                        <SignInButton mode="modal">
+                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                        </SignInButton>
+                      </div>
                     </SignedOut>
                     <SignedIn>
-                      <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
-                        Contact Sales
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
+                          Candidate Access
+                        </Button>
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => router.push("/recruiter")}
+                        >
+                          Recruiter Access
+                        </Button>
+                      </div>
                     </SignedIn>
                   </CardFooter>
                 </Card>
