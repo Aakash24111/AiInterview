@@ -29,3 +29,17 @@ class InterviewInstance(BaseModel):
 class UserInterviews(BaseModel):
     user_id:int
     company_interviews:List[InterviewInstance]
+    
+class CompanyInterviewInstance(BaseModel):
+    user_id:int
+    user_name:int
+    interview_id:int
+    job_role:str
+    job_id:str
+    interview_result: Literal['pending','assessing','rejected','accepted']= Field(default="pending")
+    conversation:List[Conversation]
+    
+class CompanyInterviews(BaseModel):
+    company_id:int
+    user_interviews:List[CompanyInterviewInstance]
+    

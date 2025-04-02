@@ -55,4 +55,12 @@ async def post_messages_to_db(user_id:int,interview_instance:InterviewInstance,u
     final_result=await user_interviews.find_one( {"_id": user_id,"company_interviews.interview_id": interview_instance.interview_id}, {"company_interviews.$": 1} )
     if final_result and "company_interviews" in final_result:
         return final_result["company_interviews"][0]
-    
+
+
+async def get_interview_by_user_id(user_id:int,user_interviews:AsyncIOMotorClient)->dict:
+    user_data = await user_interviews.find_one({'_id':user_id},{'_id':0})
+    if user_data:
+        user_data['user_id']=user_id
+        return user_data
+    else: 
+        return {"user_id": user_id, "company_interviews": []}
