@@ -157,7 +157,7 @@ export default function Home() {
                   <JobCard
                     key={job.job_id}
                     id={job.job_id}
-                    jobTitle={job.job_description}
+                    jobTitle={job.job_title}
                     companyName={`Company ${job.company_name}`}
                     experience={`${job.experience} years`}
                     salary={`$${job.salary}`}
