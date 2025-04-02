@@ -3,6 +3,8 @@ from app.routers.company_router import router as company_router  # Correct impor
 from app.routers.job_router import router as job_router  # Correct import for job_router
 from app.db.database import SessionLocal, Base, engine
 from app.routers.user_routes import router as user_router
+from fastapi.middleware.cors import CORSMiddleware
+
 # Create database tables
 try:
     Base.metadata.create_all(bind=engine)
@@ -12,6 +14,14 @@ except Exception as e:
 
 # Initialize FastAPI app
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Change to specific origins in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include company and job routers
 app.include_router(company_router)  # This includes the company router

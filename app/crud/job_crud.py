@@ -1,31 +1,10 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.job_model import JobService
+from app.models.company_model import Company
 
-def create_job_service(db: Session, company_id: int, job_description: str, job_location: str, job_type: str,
-                       salary: float, experience: int, num_of_questions: int, difficulty_level: str, 
-                       valid_through_start: str, valid_through_end: str, include_dsa_questions: str, 
-                       num_of_dsa_questions: int, include_predefined_questions: str, predefined_questions_list: str,
-                       eligibility_criteria: str, eligibility_threshold: float, job_roles: list):
+def create_job_service(db: Session, **job_data):
     try:
-        db_job_service = JobService(
-            company_id=company_id,
-            job_description=job_description,
-            job_location=job_location,
-            job_type=job_type,
-            salary=salary,
-            experience=experience,
-            num_of_questions=num_of_questions,
-            difficulty_level=difficulty_level,
-            valid_through_start=valid_through_start,
-            valid_through_end=valid_through_end,
-            include_dsa_questions=include_dsa_questions,
-            num_of_dsa_questions=num_of_dsa_questions,
-            include_predefined_questions=include_predefined_questions,
-            predefined_questions_list=predefined_questions_list,
-            eligibility_criteria=eligibility_criteria,
-            eligibility_threshold=eligibility_threshold,
-            job_roles=",".join(job_roles) if job_roles else None
-        )
+        db_job_service = JobService(**job_data)
         db.add(db_job_service)
         db.commit()
         db.refresh(db_job_service)
@@ -34,53 +13,64 @@ def create_job_service(db: Session, company_id: int, job_description: str, job_l
         print(f"Error occurred while creating job service: {str(e)}")
         raise
 
-
 def get_job_services(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(JobService).offset(skip).limit(limit).all()
+    job_services = (
+        db.query(JobService)
+        .options(joinedload(JobService.company))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
-
+    return [
+        {
+            "job_id": job.job_id,
+            "company_logo": job.company.company_logo,
+            "job_title": job.job_title,
+            "company_name": job.company.company_name if job.company else None,
+            "about_company": job.company.about_company if job.company else None,
+            "experience": job.experience,  # Now an integer, removed `.value`
+            "salary": job.salary,
+            "job_type": job.job_type.value,  # Still Enum, kept `.value`
+            "job_location": job.job_location,
+            "posted_date": job.posted_date,
+            "application_deadline": job.application_deadline,
+            "job_description": job.job_description,
+            "responsibilities": job.responsibilities,
+            "requirements": job.requirements,
+            "benefits": job.benefits,
+            "team_size": job.team_size,
+            "interview_process": job.interview_process,
+            "num_of_questions": job.num_of_questions,
+            "difficulty_level": job.difficulty_level,
+            "valid_through_start": job.valid_through_start,
+            "valid_through_end": job.valid_through_end,
+            "include_dsa_questions": job.include_dsa_questions,  # Boolean
+            "num_of_dsa_questions": job.num_of_dsa_questions,
+            "include_predefined_questions": job.include_predefined_questions,  # Boolean
+            "predefined_questions_list": job.predefined_questions_list,
+            "eligibility_criteria": job.eligibility_criteria,
+            "eligibility_threshold": job.eligibility_threshold,
+            "job_roles": job.job_roles,
+        }
+        for job in job_services
+    ]
+    
 def get_job_service_by_id(db: Session, job_id: int):
-    return db.query(JobService).filter(JobService.job_id == job_id).first()
+    return db.query(JobService).options(joinedload(JobService.company)).filter(JobService.job_id == job_id).first()
 
-
-def update_job_service(db: Session, job_id: int, company_id: int = None, job_description: str = None, 
-                       job_location: str = None, job_type: str = None, salary: float = None, 
-                       experience: int = None, num_of_questions: int = None, difficulty_level: str = None, 
-                       valid_through_start: str = None, valid_through_end: str = None, 
-                       include_dsa_questions: bool = None, num_of_dsa_questions: int = None, 
-                       include_predefined_questions: bool = None, predefined_questions_list: str = None, 
-                       eligibility_criteria: str = None, eligibility_threshold: float = None, 
-                       job_roles: list = None):
+def update_job_service(db: Session, job_id: int, **update_data):
     db_job_service = db.query(JobService).filter(JobService.job_id == job_id).first()
     
-    if db_job_service:
-        # Update only the fields that are provided
-        db_job_service.company_id = company_id or db_job_service.company_id
-        db_job_service.job_description = job_description or db_job_service.job_description
-        db_job_service.job_location = job_location or db_job_service.job_location
-        db_job_service.job_type = job_type or db_job_service.job_type
-        db_job_service.salary = salary or db_job_service.salary
-        db_job_service.experience = experience or db_job_service.experience
-        db_job_service.num_of_questions = num_of_questions or db_job_service.num_of_questions
-        db_job_service.difficulty_level = difficulty_level or db_job_service.difficulty_level
-        db_job_service.valid_through_start = valid_through_start or db_job_service.valid_through_start
-        db_job_service.valid_through_end = valid_through_end or db_job_service.valid_through_end
-        db_job_service.include_dsa_questions = include_dsa_questions or db_job_service.include_dsa_questions
-        db_job_service.num_of_dsa_questions = num_of_dsa_questions or db_job_service.num_of_dsa_questions
-        db_job_service.include_predefined_questions = include_predefined_questions or db_job_service.include_predefined_questions
-        db_job_service.predefined_questions_list = predefined_questions_list or db_job_service.predefined_questions_list
-        db_job_service.eligibility_criteria = eligibility_criteria or db_job_service.eligibility_criteria
-        db_job_service.eligibility_threshold = eligibility_threshold or db_job_service.eligibility_threshold
-        
-        # Update job roles: check if new roles are provided
-        if job_roles:
-            db_job_service.job_roles = ",".join(job_roles)
+    if db_job_service:  
+        for key, value in update_data.items():
+            if value is not None:
+                setattr(db_job_service, key, value)
         
         db.commit()
         db.refresh(db_job_service)
     
     return db_job_service
-
 
 def delete_job_service(db: Session, job_id: int):
     db_job_service = db.query(JobService).filter(JobService.job_id == job_id).first()
