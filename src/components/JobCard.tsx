@@ -90,7 +90,7 @@ export default function JobCard({
           </Button>
           <Button variant="default" className="w-full" asChild>
             <a
-              href={`/job/${encodeURIComponent(jobTitle.toLowerCase().replace(/ /g, "-"))}-${companyName.toLowerCase().replace(/ /g, "-")}`}
+              href={`/job/${encodeURIComponent(id)}`}
             >
               View Details
             </a>

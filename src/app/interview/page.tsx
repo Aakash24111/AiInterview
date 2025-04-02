@@ -1,19 +1,29 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import JobCard from "@/components/JobCard"
-import SearchBar from "@/components/search-bar"
-import FilterSection from "@/components/filter-section"
-import { Button } from "@/components/ui/button"
-import { Briefcase } from "lucide-react"
-import { jobsData } from "@/components/interview/data" 
+import { useState, useEffect } from "react";
+import JobCard from "@/components/JobCard";
+import SearchBar from "@/components/search-bar";
+import FilterSection from "@/components/filter-section";
+import { Button } from "@/components/ui/button";
+import { Briefcase } from "lucide-react";
 
 // Define interfaces for better type safety
+interface Job {
+  job_id: number;
+  job_roles: string;
+  job_location: string;
+  job_type: string;
+  salary: string;
+  experience: string;
+  company_name: string;
+  job_description: string;
+}
+
 interface FilterOptions {
   jobTypes: string[];
   locations: string[];
-  experienceRange: [number, number]; 
-  salaryRange: [number, number]; 
+  experienceRange: [number, number];
+  salaryRange: [number, number];
   skills: string[];
 }
 
@@ -25,79 +35,100 @@ interface SelectedFilters {
   skills: string[];
 }
 
-// Extract unique filter options
-const extractFilters = (): FilterOptions => {
-  const jobTypes = Array.from(new Set(jobsData.map((job) => job.jobType)));
-  const locations = Array.from(new Set(jobsData.map((job) => job.location)));
-  const skills = Array.from(new Set(jobsData.flatMap((job) => job.tags)));
-
-  return {
-    jobTypes,
-    locations,
-    experienceRange: [0, 15] as [number, number], 
-    salaryRange: [0, 100] as [number, number], 
-    skills,
-  };
-};
-
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filters, setFilters] = useState<FilterOptions>(extractFilters())
+  const [searchQuery, setSearchQuery] = useState("");
+  const [jobsData, setJobsData] = useState<Job[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+  const [filters, setFilters] = useState<FilterOptions>({
+    jobTypes: [],
+    locations: [],
+    experienceRange: [0, 15],
+    salaryRange: [0, 10000000],
+    skills: [],
+  });
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({
-    jobTypes: [] as string[],
-    locations: [] as string[],
-    experienceRange: [0, 15] as [number, number],
-    salaryRange: [0, 100] as [number, number],
-    skills: [] as string[],
-  });  
-  const [filteredJobs, setFilteredJobs] = useState(jobsData)
+    jobTypes: [],
+    locations: [],
+    experienceRange: [0, 15],
+    salaryRange: [0, 10000000],
+    skills: [],
+  });
 
-  // Filter jobs based on search query and selected filters
+  // Fetch jobs data dynamically
   useEffect(() => {
-    let result = jobsData
+    async function fetchJobs() {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/job/job_services/?skip=0&limit=10");
+        const data: Job[] = await response.json();
+
+        setJobsData(data);
+        setFilteredJobs(data);
+
+        // Extract unique filter values
+        setFilters({
+          jobTypes: Array.from(new Set(data.map((job) => job.job_type))),
+          locations: Array.from(new Set(data.map((job) => job.job_location))),
+          experienceRange: [0, Math.max(...data.map((job) => extractNumber(job.experience)), 15)],
+          salaryRange: [0, Math.max(...data.map((job) => extractNumber(job.salary)), 10000000)],
+          skills: Array.from(new Set(data.flatMap((job) => job.job_roles.split(", ")))),
+        });
+      } catch (error) {
+        console.error("Failed to fetch jobs:", error);
+      }
+    }
+
+    fetchJobs();
+  }, []);
+
+  // Filtering logic (unchanged)
+  useEffect(() => {
+    let result = jobsData;
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       result = result.filter(
         (job) =>
-          job.jobTitle.toLowerCase().includes(query) ||
-          job.companyName.toLowerCase().includes(query) ||
-          job.tags.some((tag) => tag.toLowerCase().includes(query))
-      )
+          job.job_roles.toLowerCase().includes(query) ||
+          job.job_description.toLowerCase().includes(query)
+      );
     }
 
     if (selectedFilters.jobTypes.length > 0) {
-      result = result.filter((job) => selectedFilters.jobTypes.includes(job.jobType))
+      result = result.filter((job) => selectedFilters.jobTypes.includes(job.job_type));
     }
 
     if (selectedFilters.locations.length > 0) {
-      result = result.filter((job) => selectedFilters.locations.includes(job.location))
+      result = result.filter((job) => selectedFilters.locations.includes(job.job_location));
     }
 
     result = result.filter((job) => {
-      const expRange = job.experience.match(/\d+/g)
-      if (expRange && expRange.length >= 1) {
-        const minExp = Number.parseInt(expRange[0])
-        return minExp >= selectedFilters.experienceRange[0] && minExp <= selectedFilters.experienceRange[1]
-      }
-      return true
-    })
+      const minExp = extractNumber(job.experience);
+      return minExp >= selectedFilters.experienceRange[0] && minExp <= selectedFilters.experienceRange[1];
+    });
 
     result = result.filter((job) => {
-      const salaryRange = job.salary.match(/\d+/g)
-      if (salaryRange && salaryRange.length >= 1) {
-        const minSalary = Number.parseInt(salaryRange[0])
-        return minSalary >= selectedFilters.salaryRange[0] && minSalary <= selectedFilters.salaryRange[1]
-      }
-      return true
-    })
+      const minSalary = extractNumber(job.salary);
+      return minSalary >= selectedFilters.salaryRange[0] && minSalary <= selectedFilters.salaryRange[1];
+    });
 
     if (selectedFilters.skills.length > 0) {
-      result = result.filter((job) => selectedFilters.skills.some((skill) => job.tags.includes(skill)))
+      result = result.filter((job) =>
+        selectedFilters.skills.some((skill) => job.job_roles.includes(skill))
+      );
     }
 
-    setFilteredJobs(result)
-  }, [searchQuery, selectedFilters])
+    setFilteredJobs(result);
+  }, [searchQuery, selectedFilters, jobsData]);
+
+  // Function to extract numeric values from experience and salary fields
+  function extractNumber(value: string | number): number {
+    if (typeof value === "number") return value; // If it's already a number, return it
+    if (typeof value === "string") {
+      const numbers = value.match(/\d+/g);
+      return numbers ? Number.parseInt(numbers[0]) : 0;
+    }
+    return 0; // Default to 0 if the value is neither string nor number
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -118,31 +149,21 @@ export default function Home() {
           <div className="flex-1">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-medium">{filteredJobs.length} Jobs Available</h2>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Sort by:</span>
-                <select className="text-sm border rounded-md px-2 py-1 transition-all bg-white text-black border-gray-300 dark:bg-gray-800 dark:text-white dark:border-gray-600">
-                  <option className="dark:bg-gray-900 dark:text-white">Relevance</option>
-                  <option className="dark:bg-gray-900 dark:text-white">Latest</option>
-                  <option className="dark:bg-gray-900 dark:text-white">Salary: High to Low</option>
-                  <option className="dark:bg-gray-900 dark:text-white">Salary: Low to High</option>
-                </select>
-              </div>
             </div>
 
             {filteredJobs.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredJobs.map((job) => (
                   <JobCard
-                    key={job.id}
-                    id={job.id}
-                    companyLogo={job.companyLogo}
-                    jobTitle={job.jobTitle}
-                    companyName={job.companyName}
-                    experience={job.experience}
-                    salary={job.salary}
-                    jobType={job.jobType}
-                    location={job.location}
-                    tags={job.tags}
+                    key={job.job_id}
+                    id={job.job_id}
+                    jobTitle={job.job_description}
+                    companyName={`Company ${job.company_name}`}
+                    experience={`${job.experience} years`}
+                    salary={`$${job.salary}`}
+                    jobType={job.job_type}
+                    location={job.job_location}
+                    tags={job.job_roles ? job.job_roles.split(", ").map((role) => role.trim()) : []}
                   />
                 ))}
               </div>
@@ -156,5 +177,5 @@ export default function Home() {
         </div>
       </div>
     </main>
-  )
+  );
 }

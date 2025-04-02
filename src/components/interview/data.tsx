@@ -1,4 +1,5 @@
 
+
 import { Coffee, Lightbulb, Brain, Zap, Sparkles } from "lucide-react"
 import type {
   CodingChallenge,
@@ -253,4 +254,3 @@ export const virtualBackgrounds: VirtualBackground[] = [
   { id: "tech", name: "Tech Space", url: "/backgrounds/tech.jpg" },
   { id: "blur", name: "Blur", url: "blur" },
 ]
-
