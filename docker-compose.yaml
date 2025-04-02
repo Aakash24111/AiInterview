@@ -1,0 +1,22 @@
+services:
+  fastapi:
+    build: .
+    container_name: interview_service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+    volumes:
+      - .:/app
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db  
+
+volumes:
+  mongo_data:
