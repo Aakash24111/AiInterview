@@ -3,7 +3,7 @@
 import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { Moon, Sun, CheckCircle, FileText, Video, MessageSquare, Play, ArrowRight } from "lucide-react"
+import { CheckCircle, FileText, Video, MessageSquare, Play, ArrowRight } from "lucide-react"
 import AIGeneratedImage from "@/components/ai-generated-image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 export default function Home() {
   const router = useRouter()
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [userRole, setUserRole] = useState<"candidate" | "recruiter" | null>(null)
 
   useEffect(() => {
     // Check if user prefers dark mode
@@ -28,6 +29,21 @@ export default function Home() {
       document.documentElement.classList.remove("dark")
     }
   }, [])
+
+  useEffect(() => {
+    // Check if there's a saved role in localStorage
+    const savedRole = localStorage.getItem("userRole") as "candidate" | "recruiter" | null
+    if (savedRole) {
+      setUserRole(savedRole)
+    }
+  }, [])
+
+  // Update localStorage when userRole changes
+  useEffect(() => {
+    if (userRole) {
+      localStorage.setItem("userRole", userRole)
+    }
+  }, [userRole])
 
   const toggleDarkMode = () => {
     if (isDarkMode) {
@@ -45,7 +61,6 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:grid lg:grid-cols-12 lg:gap-8">
             <div className="lg:col-span-6 flex flex-col justify-center">
@@ -71,12 +86,20 @@ export default function Home() {
                 <SignedOut>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <SignInButton mode="modal">
-                      <Button size="lg" className="gap-2 bg-blue-600 hover:bg-blue-700">
+                      <Button
+                        size="lg"
+                        className="gap-2 bg-blue-600 hover:bg-blue-700"
+                        onClick={() => setUserRole("candidate")}
+                      >
                         Sign In as Candidate <ArrowRight className="h-4 w-4" />
                       </Button>
                     </SignInButton>
                     <SignInButton mode="modal">
-                      <Button size="lg" className="gap-2 bg-green-600 hover:bg-green-700">
+                      <Button
+                        size="lg"
+                        className="gap-2 bg-green-600 hover:bg-green-700"
+                        onClick={() => setUserRole("recruiter")}
+                      >
                         Sign In as Recruiter <ArrowRight className="h-4 w-4" />
                       </Button>
                     </SignInButton>
@@ -84,20 +107,24 @@ export default function Home() {
                 </SignedOut>
                 <SignedIn>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Button
-                      size="lg"
-                      onClick={() => router.push("/interview")}
-                      className="gap-2 bg-blue-600 hover:bg-blue-700"
-                    >
-                      Candidate Dashboard <ArrowRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="lg"
-                      onClick={() => router.push("/recruiter")}
-                      className="gap-2 bg-green-600 hover:bg-green-700"
-                    >
-                      Recruiter Dashboard <ArrowRight className="h-4 w-4" />
-                    </Button>
+                    {(userRole === "candidate" || userRole === null) && (
+                      <Button
+                        size="lg"
+                        onClick={() => router.push("/interview")}
+                        className="gap-2 bg-blue-600 hover:bg-blue-700"
+                      >
+                        Candidate Dashboard <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {(userRole === "recruiter" || userRole === null) && (
+                      <Button
+                        size="lg"
+                        onClick={() => router.push("/recruiter")}
+                        className="gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        Recruiter Dashboard <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </SignedIn>
                 <Button variant="outline" size="lg" asChild className="mt-4 sm:mt-0">
@@ -330,24 +357,35 @@ export default function Home() {
                     <SignedOut>
                       <div className="w-full space-y-2">
                         <SignInButton mode="modal">
-                          <Button className="w-full">Sign In as Candidate</Button>
+                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
+                            Sign In as Candidate
+                          </Button>
                         </SignInButton>
                         <SignInButton mode="modal">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => setUserRole("recruiter")}
+                          >
+                            Sign In as Recruiter
+                          </Button>
                         </SignInButton>
                       </div>
                     </SignedOut>
                     <SignedIn>
                       <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push("/interview")}>
-                          Candidate Access
-                        </Button>
-                        <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          onClick={() => router.push("/recruiter")}
-                        >
-                          Recruiter Access
-                        </Button>
+                        {(userRole === "candidate" || userRole === null) && (
+                          <Button className="w-full" onClick={() => router.push("/interview")}>
+                            Candidate Access
+                          </Button>
+                        )}
+                        {(userRole === "recruiter" || userRole === null) && (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => router.push("/recruiter")}
+                          >
+                            Recruiter Access
+                          </Button>
+                        )}
                       </div>
                     </SignedIn>
                   </CardFooter>
@@ -392,24 +430,35 @@ export default function Home() {
                     <SignedOut>
                       <div className="w-full space-y-2">
                         <SignInButton mode="modal">
-                          <Button className="w-full">Sign In as Candidate</Button>
+                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
+                            Sign In as Candidate
+                          </Button>
                         </SignInButton>
                         <SignInButton mode="modal">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => setUserRole("recruiter")}
+                          >
+                            Sign In as Recruiter
+                          </Button>
                         </SignInButton>
                       </div>
                     </SignedOut>
                     <SignedIn>
                       <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
-                          Candidate Access
-                        </Button>
-                        <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          onClick={() => router.push("/recruiter")}
-                        >
-                          Recruiter Access
-                        </Button>
+                        {(userRole === "candidate" || userRole === null) && (
+                          <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
+                            Candidate Access
+                          </Button>
+                        )}
+                        {(userRole === "recruiter" || userRole === null) && (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => router.push("/recruiter")}
+                          >
+                            Recruiter Access
+                          </Button>
+                        )}
                       </div>
                     </SignedIn>
                   </CardFooter>
@@ -455,24 +504,35 @@ export default function Home() {
                     <SignedOut>
                       <div className="w-full space-y-2">
                         <SignInButton mode="modal">
-                          <Button className="w-full">Sign In as Candidate</Button>
+                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
+                            Sign In as Candidate
+                          </Button>
                         </SignInButton>
                         <SignInButton mode="modal">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => setUserRole("recruiter")}
+                          >
+                            Sign In as Recruiter
+                          </Button>
                         </SignInButton>
                       </div>
                     </SignedOut>
                     <SignedIn>
                       <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
-                          Candidate Access
-                        </Button>
-                        <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          onClick={() => router.push("/recruiter")}
-                        >
-                          Recruiter Access
-                        </Button>
+                        {(userRole === "candidate" || userRole === null) && (
+                          <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
+                            Candidate Access
+                          </Button>
+                        )}
+                        {(userRole === "recruiter" || userRole === null) && (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => router.push("/recruiter")}
+                          >
+                            Recruiter Access
+                          </Button>
+                        )}
                       </div>
                     </SignedIn>
                   </CardFooter>
@@ -514,24 +574,35 @@ export default function Home() {
                     <SignedOut>
                       <div className="w-full space-y-2">
                         <SignInButton mode="modal">
-                          <Button className="w-full">Sign In as Candidate</Button>
+                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
+                            Sign In as Candidate
+                          </Button>
                         </SignInButton>
                         <SignInButton mode="modal">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => setUserRole("recruiter")}
+                          >
+                            Sign In as Recruiter
+                          </Button>
                         </SignInButton>
                       </div>
                     </SignedOut>
                     <SignedIn>
                       <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push("/interview")}>
-                          Candidate Access
-                        </Button>
-                        <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          onClick={() => router.push("/recruiter")}
-                        >
-                          Recruiter Access
-                        </Button>
+                        {(userRole === "candidate" || userRole === null) && (
+                          <Button className="w-full" onClick={() => router.push("/interview")}>
+                            Candidate Access
+                          </Button>
+                        )}
+                        {(userRole === "recruiter" || userRole === null) && (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => router.push("/recruiter")}
+                          >
+                            Recruiter Access
+                          </Button>
+                        )}
                       </div>
                     </SignedIn>
                   </CardFooter>
@@ -576,24 +647,35 @@ export default function Home() {
                     <SignedOut>
                       <div className="w-full space-y-2">
                         <SignInButton mode="modal">
-                          <Button className="w-full">Sign In as Candidate</Button>
+                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
+                            Sign In as Candidate
+                          </Button>
                         </SignInButton>
                         <SignInButton mode="modal">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => setUserRole("recruiter")}
+                          >
+                            Sign In as Recruiter
+                          </Button>
                         </SignInButton>
                       </div>
                     </SignedOut>
                     <SignedIn>
                       <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
-                          Candidate Access
-                        </Button>
-                        <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          onClick={() => router.push("/recruiter")}
-                        >
-                          Recruiter Access
-                        </Button>
+                        {(userRole === "candidate" || userRole === null) && (
+                          <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
+                            Candidate Access
+                          </Button>
+                        )}
+                        {(userRole === "recruiter" || userRole === null) && (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => router.push("/recruiter")}
+                          >
+                            Recruiter Access
+                          </Button>
+                        )}
                       </div>
                     </SignedIn>
                   </CardFooter>
@@ -639,24 +721,35 @@ export default function Home() {
                     <SignedOut>
                       <div className="w-full space-y-2">
                         <SignInButton mode="modal">
-                          <Button className="w-full">Sign In as Candidate</Button>
+                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
+                            Sign In as Candidate
+                          </Button>
                         </SignInButton>
                         <SignInButton mode="modal">
-                          <Button className="w-full bg-green-600 hover:bg-green-700">Sign In as Recruiter</Button>
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => setUserRole("recruiter")}
+                          >
+                            Sign In as Recruiter
+                          </Button>
                         </SignInButton>
                       </div>
                     </SignedOut>
                     <SignedIn>
                       <div className="w-full space-y-2">
-                        <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
-                          Candidate Access
-                        </Button>
-                        <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          onClick={() => router.push("/recruiter")}
-                        >
-                          Recruiter Access
-                        </Button>
+                        {(userRole === "candidate" || userRole === null) && (
+                          <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
+                            Candidate Access
+                          </Button>
+                        )}
+                        {(userRole === "recruiter" || userRole === null) && (
+                          <Button
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => router.push("/recruiter")}
+                          >
+                            Recruiter Access
+                          </Button>
+                        )}
                       </div>
                     </SignedIn>
                   </CardFooter>
