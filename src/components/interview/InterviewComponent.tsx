@@ -193,50 +193,68 @@ export default function InterviewComponent({ job }: InterviewComponentProps) {
   }
 
   // Update the handleSendMessage function to advance the interview stages more reliably
-  const handleSendMessage = (message: string) => {
-    if (message.trim() === "") return
-
-    const newMsg: InterviewMessage = {
-      id: messages.length + 1,
-      sender: "candidate",
-      message: message,
-      timestamp: new Date().toISOString(),
-    }
-
-    setMessages([...messages, newMsg])
-
-    // Simulate interviewer typing
-    setIsTyping(true)
-
-    // Simulate interviewer response after a delay
-    setTimeout(() => {
-      setIsTyping(false)
-
-      // Advance to next stage after every message to ensure progress bar moves
-      if (currentStage < interviewStages.length - 1) {
-        setCurrentStage((prevStage) => prevStage + 1)
-      }
-
-      const responses = [
-        "Thank you for your response. Let me ask you another question. What are your strengths and weaknesses as a developer?",
-        "That's interesting. Can you tell me about a challenging project you worked on recently?",
-        "Great insights. How do you stay updated with the latest technologies in your field?",
-        "Thank you for sharing that. What would you say is your greatest professional achievement?",
-        "I appreciate your detailed answer. Do you have any questions for me about the role or company?",
-      ]
-
-      const responseIndex = Math.min(currentStage, responses.length - 1)
-
-      const response: InterviewMessage = {
-        id: messages.length + 2,
-        sender: "interviewer",
-        message: responses[responseIndex],
+  const handleSendMessage = async (message: string) => {
+    if (!message || message.trim() === "") return; // Prevent empty messages
+  
+    // Add candidate's message to UI immediately
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      {
+        id: Date.now(), // Temporary ID
+        sender: "candidate",
+        message: message,
         timestamp: new Date().toISOString(),
+      },
+    ]);
+  
+    setIsTyping(true); // Show AI typing effect
+  
+    try {
+      const response = await fetch("http://localhost:8001/interview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          interview_id: 101, // Replace with actual interview ID
+          user_id: 59,       // Replace with actual user ID
+          message: message,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
-      setMessages((prevMessages) => [...prevMessages, response])
-    }, 3000)
-  }
+  
+      const data = await response.json();
+      console.log("Response from backend:", data);
+  
+      if (!data.response) {
+        throw new Error("Invalid response format from backend");
+      }
+  
+      // Trim response: Add a newline after every full stop
+      const formattedResponse = data.response.replace(/\. /g, ".\n");
+  
+      setTimeout(() => {
+        setIsTyping(false); // Hide typing effect
+  
+        // Add AI response to UI
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            id: Date.now() + 1, // Unique ID for AI message
+            sender: "interviewer",
+            message: formattedResponse, // Use formatted response
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }, 2000); // Simulated delay for AI response
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setIsTyping(false);
+    }
+  };
 
   // Replace the handleResetCode function with this version
   const handleResetCode = () => {

@@ -22,10 +22,10 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
   }, [messages])
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === "") return
-    onSendMessage(newMessage)
-    setNewMessage("")
-  }
+    if (newMessage.trim() === "") return;
+    onSendMessage(newMessage); // Calls the function from `InterviewComponent`
+    setNewMessage(""); // Clears input field
+  };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -33,8 +33,9 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
   }
 
   return (
-    <div className="flex-1 flex flex-col p-0 h-full">
-      <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex flex-col h-full">
+      {/* Chat Messages - Scrollable Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-2 max-h-[calc(100vh-150px)]">
         {messages.map((msg) => (
           <div key={msg.id} className={`mb-4 flex ${msg.sender === "interviewer" ? "justify-start" : "justify-end"}`}>
             <div
@@ -43,7 +44,7 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
               }`}
             >
               <div className="flex flex-col">
-                <span className="text-sm">{msg.message}</span>
+                <span className="text-sm whitespace-pre-line">{msg.message}</span>
                 <span className="text-xs opacity-70 mt-1 text-right">{formatTime(msg.timestamp)}</span>
               </div>
             </div>
@@ -62,13 +63,15 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Input Area - Fixed at Bottom */}
       <div className="p-4 border-t sticky bottom-0 bg-background">
         <div className="flex gap-2">
           <Textarea
             placeholder="Type your message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            className="min-h-[60px]"
+            className="min-h-[60px] resize-none"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
@@ -84,4 +87,3 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
     </div>
   )
 }
-
