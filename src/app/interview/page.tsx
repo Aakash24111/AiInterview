@@ -9,14 +9,28 @@ import { Briefcase } from "lucide-react";
 
 // Define interfaces for better type safety
 interface Job {
-  job_id: number;
-  job_roles: string;
-  job_location: string;
-  job_type: string;
-  salary: string;
-  experience: string;
-  company_name: string;
-  job_description: string;
+  jobId: number;
+  jobTitle: string;
+  department: string;
+  location: string;
+  jobType: string;
+  experienceRequired: string;
+  salaryRange: string;
+  applicationDeadline: string;
+  createdAt: string;
+  status: string;
+  teamSize: string;
+  tags: string[];
+  remoteWorkAvailable: boolean;
+  urgentHiring: boolean;
+  publishImmediately: boolean;
+  jobDescription: string;
+  responsibilities: string;
+  requirements: string;
+  benefits: string;
+  interviewProcess: string;
+  companyId: number;
+   company_name: string;
 }
 
 interface FilterOptions {
@@ -56,69 +70,120 @@ export default function Home() {
 
   // Fetch jobs data dynamically
   useEffect(() => {
-    async function fetchJobs() {
-      try {
-        const response = await fetch("http://127.0.0.1:8000/job/job_services/?skip=0&limit=10");
-        const data: Job[] = await response.json();
+  async function fetchJobsWithCompanyNames() {
+    try {
+      // Step 1: Get token
+      const tokenResponse = await fetch("http://127.0.0.1:8000/user/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: "user", password: "user" }),
+      });
 
-        setJobsData(data);
-        setFilteredJobs(data);
+      if (!tokenResponse.ok) throw new Error("Failed to get token");
 
-        // Extract unique filter values
-        setFilters({
-          jobTypes: Array.from(new Set(data.map((job) => job.job_type))),
-          locations: Array.from(new Set(data.map((job) => job.job_location))),
-          experienceRange: [0, Math.max(...data.map((job) => extractNumber(job.experience)), 15)],
-          salaryRange: [0, Math.max(...data.map((job) => extractNumber(job.salary)), 10000000)],
-          skills: Array.from(new Set(data.flatMap((job) => job.job_roles.split(", ")))),
-        });
-      } catch (error) {
-        console.error("Failed to fetch jobs:", error);
-      }
+      const token = await tokenResponse.text();
+
+      // Step 2: Fetch jobs
+      const jobResponse = await fetch("http://localhost:8001/job_service/getJobs", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!jobResponse.ok) throw new Error("Failed to fetch jobs");
+
+      const jobs = await jobResponse.json();
+
+      // Step 3: Fetch company details with token
+      const jobsWithCompanyNames = await Promise.all(
+        jobs.map(async (job: any) => {
+          try {
+            const companyResponse = await fetch(
+              `http://localhost:8002/company/companyDetails/${job.companyId}`,
+              {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+
+            if (!companyResponse.ok) throw new Error("Failed to fetch company");
+
+            const companyData = await companyResponse.json();
+
+            return {
+              ...job,
+              company_name: companyData.companyName, // Use actual name
+            };
+          } catch (err) {
+            console.error(`Error fetching company ${job.companyId}:`, err);
+            return {
+              ...job,
+              company_name: "Unknown Company", // Fallback
+            };
+          }
+        })
+      );
+
+      // Set to state
+      setJobsData(jobsWithCompanyNames);
+    } catch (err) {
+      console.error("Error fetching jobs or companies:", err);
     }
+  }
 
-    fetchJobs();
-  }, []);
+  fetchJobsWithCompanyNames();
+}, []);
+
 
   // Filtering logic (unchanged)
   useEffect(() => {
-    let result = jobsData;
+  let result = jobsData;
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (job) =>
-          job.job_roles.toLowerCase().includes(query) ||
-          job.job_description.toLowerCase().includes(query)
-      );
-    }
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    result = result.filter(
+      (job) =>
+        job.tags.some((tag) => tag.toLowerCase().includes(query)) || // ✅ use tags
+        job.jobDescription.toLowerCase().includes(query)
+    );
+  }
 
-    if (selectedFilters.jobTypes.length > 0) {
-      result = result.filter((job) => selectedFilters.jobTypes.includes(job.job_type));
-    }
+  if (selectedFilters.jobTypes.length > 0) {
+    result = result.filter((job) => selectedFilters.jobTypes.includes(job.jobType));
+  }
 
-    if (selectedFilters.locations.length > 0) {
-      result = result.filter((job) => selectedFilters.locations.includes(job.job_location));
-    }
+  if (selectedFilters.locations.length > 0) {
+    result = result.filter((job) => selectedFilters.locations.includes(job.location));
+  }
 
-    result = result.filter((job) => {
-      const minExp = extractNumber(job.experience);
-      return minExp >= selectedFilters.experienceRange[0] && minExp <= selectedFilters.experienceRange[1];
-    });
+  result = result.filter((job) => {
+    const minExp = extractNumber(job.experienceRequired);
+    return minExp >= selectedFilters.experienceRange[0] && minExp <= selectedFilters.experienceRange[1];
+  });
 
-    result = result.filter((job) => {
-      const minSalary = extractNumber(job.salary);
-      return minSalary >= selectedFilters.salaryRange[0] && minSalary <= selectedFilters.salaryRange[1];
-    });
+  result = result.filter((job) => {
+    const minSalary = extractNumber(job.salaryRange);
+    return minSalary >= selectedFilters.salaryRange[0] && minSalary <= selectedFilters.salaryRange[1];
+  });
 
-    if (selectedFilters.skills.length > 0) {
-      result = result.filter((job) =>
-        selectedFilters.skills.some((skill) => job.job_roles.includes(skill))
-      );
-    }
+  if (selectedFilters.skills.length > 0) {
+    result = result.filter((job) =>
+      selectedFilters.skills.some((skill) =>
+        job.tags.some((tag) => tag.toLowerCase().includes(skill.toLowerCase()))
+      )
+    );
+  }
 
-    setFilteredJobs(result);
-  }, [searchQuery, selectedFilters, jobsData]);
+  setFilteredJobs(result);
+}, [searchQuery, selectedFilters, jobsData]);
 
   // Function to extract numeric values from experience and salary fields
   function extractNumber(value: string | number): number {
@@ -155,15 +220,15 @@ export default function Home() {
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredJobs.map((job) => (
                   <JobCard
-                    key={job.job_id}
-                    id={job.job_id}
-                    jobTitle={job.job_title}
+                    key={job.jobId}
+                    id={job.jobId}
+                    jobTitle={job.jobTitle}
                     companyName={`Company ${job.company_name}`}
-                    experience={`${job.experience} years`}
-                    salary={`$${job.salary}`}
-                    jobType={job.job_type}
-                    location={job.job_location}
-                    tags={job.job_roles ? job.job_roles.split(", ").map((role) => role.trim()) : []}
+                    experience={job.experienceRequired}
+                    salary={job.salaryRange}
+                    jobType={job.jobType}
+                    location={job.location}
+                    tags={job.tags}
                   />
                 ))}
               </div>
