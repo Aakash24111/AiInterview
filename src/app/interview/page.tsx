@@ -84,6 +84,7 @@ export default function Home() {
       if (!tokenResponse.ok) throw new Error("Failed to get token");
 
       const token = await tokenResponse.text();
+       localStorage.setItem("userToken",token);
 
       // Step 2: Fetch jobs
       const jobResponse = await fetch("http://localhost:8001/job_service/getJobs", {

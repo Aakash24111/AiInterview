@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import SockJS from "sockjs-client"
+import { Client } from "@stomp/stompjs"
 import type { InterviewMessage } from "./types"
 
 interface InterviewChatProps {
@@ -14,18 +16,95 @@ interface InterviewChatProps {
 
 export default function InterviewChat({ messages, onSendMessage, isTyping }: InterviewChatProps) {
   const [newMessage, setNewMessage] = useState("")
+  const [wsMessages, setWsMessages] = useState<InterviewMessage[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const stompClientRef = useRef<Client | null>(null)
+  const [connected, setConnected] = useState(false)
 
-  // Scroll to bottom of messages when new messages are added
+  // Scroll to bottom on message update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, wsMessages])
+
+  // WebSocket init
+  useEffect(() => {
+    const token = localStorage.getItem("token")
+    const socket = new SockJS("http://localhost:8003/websocket")
+    
+
+    const client = new Client({
+      webSocketFactory: () => socket,
+      connectHeaders: {
+        Authorization: `Bearer ${token || ""}`,
+      },
+      reconnectDelay: 5000,
+      onConnect: () => {
+        setConnected(true)
+        // You may leave this empty or add a global fallback listener here if needed
+      },
+    })
+
+    stompClientRef.current = client
+    client.activate()
+
+    return () => {
+      client.deactivate()
+    }
+  }, [])
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === "") return;
-    onSendMessage(newMessage); // Calls the function from `InterviewComponent`
-    setNewMessage(""); // Clears input field
-  };
+    if (newMessage.trim() === "") return
+
+    const userMessage: InterviewMessage = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      message: newMessage,
+      timestamp: new Date().toISOString(),
+      sender: "user",
+    }
+
+    setWsMessages((prev) => [...prev, userMessage])
+
+    let responseReceived = false
+
+    if (connected && stompClientRef.current) {
+      // One-time response listener
+      const subscription = stompClientRef.current.subscribe("/ai/response", (msg) => {
+        responseReceived = true
+
+        const backendMessage: InterviewMessage = {
+          id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          message: msg.body,
+          timestamp: new Date().toISOString(),
+          sender: "interviewer",
+        }
+
+        setWsMessages((prev) => [...prev, backendMessage])
+        subscription.unsubscribe()
+      })
+
+      // Send user message
+      stompClientRef.current.publish({
+        destination: "/app/chat",
+        body: newMessage,
+      })
+
+      // Fallback if backend doesn't respond
+      setTimeout(() => {
+        if (!responseReceived) {
+          const fallbackMessage: InterviewMessage = {
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            message: "⚠️ No response from backend.",
+            timestamp: new Date().toISOString(),
+            sender: "interviewer",
+          }
+          setWsMessages((prev) => [...prev, fallbackMessage])
+          subscription.unsubscribe()
+        }
+      }, 5000)
+    }
+
+    setNewMessage("")
+  }
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -34,9 +113,8 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat Messages - Scrollable Area */}
       <div className="flex-1 overflow-y-auto px-4 py-2 max-h-[calc(100vh-150px)]">
-        {messages.map((msg) => (
+        {[...messages, ...wsMessages].map((msg) => (
           <div key={msg.id} className={`mb-4 flex ${msg.sender === "interviewer" ? "justify-start" : "justify-end"}`}>
             <div
               className={`max-w-[80%] rounded-lg p-3 ${
@@ -64,7 +142,6 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed at Bottom */}
       <div className="p-4 border-t sticky bottom-0 bg-background">
         <div className="flex gap-2">
           <Textarea

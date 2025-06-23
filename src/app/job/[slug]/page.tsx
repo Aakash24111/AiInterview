@@ -37,6 +37,7 @@
     interview_process: string;
     company_name: string;
     job_title: string;
+    tags:string[];
   }
 
   export default function JobDetailPage() {
@@ -47,49 +48,103 @@
     const [error, setError] = useState(false);
 
     useEffect(() => {
-      if (!params?.slug) return;
+  if (!params?.slug) return;
 
-      async function fetchJobDetails() {
-        try {
-          const jobId = params.slug;
-          const response = await fetch(`http://127.0.0.1:8000/job/job_service/${jobId}`);
-          if (!response.ok) throw new Error("Job not found");
+  async function fetchJobDetails() {
+    try {
+      const jobId = params.slug;
 
-          const rawData = await response.json();
+      // Step 1: Get token
+      const token = localStorage.getItem("userToken");
+      if (!token) throw new Error("User token not found in localStorage");
 
-          // Transform API response
-          const transformedJob: Job = {
-            job_id: rawData.job_id,
-            job_title: rawData.job_title,
-            job_roles: rawData.job_roles,
-            job_location: rawData.job_location,
-            job_type: rawData.job_type.charAt(0).toUpperCase() + rawData.job_type.slice(1),
-            salary: `$${rawData.salary.toLocaleString()}`,
-            experience: `${rawData.experience} years`,
-            company_id: rawData.company?.company_id,
-            job_description: rawData.job_description,
-            posted_date: rawData.posted_date,
-            application_deadline: rawData.application_deadline,
-            about_company: rawData.company?.about_company || "No details provided",
-            responsibilities: rawData.responsibilities.split(". ").filter(Boolean),
-            requirements: rawData.requirements.split(". ").filter(Boolean),
-            benefits: rawData.benefits.split(", ").map((b: string) => b.trim()),
-            team_size: rawData.team_size,
-            interview_process: rawData.interview_process,
-            company_name: rawData.company?.company_name || "Unknown Company",
-          };
+      // Step 2: Fetch job
+      const jobResponse = await fetch(`http://localhost:8001/job_service/getJobById/${jobId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
-          setJob(transformedJob);
-        } catch (err) {
-          console.error("Error fetching job details:", err);
-          setError(true);
-        } finally {
-          setLoading(false);
-        }
+      if (!jobResponse.ok) throw new Error("Failed to fetch job");
+
+      const rawData = await jobResponse.json();
+
+      // Step 3: Fetch company name
+      if (rawData.companyId) {
+  try {
+    const companyResponse = await fetch(
+      `http://localhost:8002/company/companyDetails/${rawData.companyId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
+    );
 
-      fetchJobDetails();
-    }, [params?.slug]);
+    if (companyResponse.ok) {
+      const companyData = await companyResponse.json();
+      rawData.company_name = companyData.companyName;
+      rawData.about_company = companyData.companyDescription;
+    } else {
+      rawData.company_name = "Unknown Company";
+      rawData.about_company = "No details provided";
+    }
+  } catch (err) {
+    rawData.company_name = "Unknown Company";
+    rawData.about_company = "No details provided";
+  }
+}
+
+
+      // Step 4: Transform job
+      const transformedJob: Job = {
+        job_id: rawData.jobId,
+        job_title: rawData.jobTitle,
+        job_location: rawData.location,
+        job_type: rawData.jobType.charAt(0).toUpperCase() + rawData.jobType.slice(1),
+        salary: `${rawData.salaryRange.toLocaleString()}`,
+        experience: `${rawData.experienceRequired} years`,
+        application_deadline: rawData.applicationDeadline,
+        posted_date: rawData.createdAt,
+        team_size: rawData.teamSize,
+        tags: rawData.tags,
+        job_description: rawData.jobDescription,
+        responsibilities: rawData.responsibilities
+    ? rawData.responsibilities.split(", ").filter(Boolean)
+    : [],
+
+  requirements: rawData.requirements
+    ? rawData.requirements.split(", ").filter(Boolean)
+    : [],
+
+  benefits: rawData.benefits
+    ? rawData.benefits.split(",").map((b: string) => b.trim())
+    : [],
+        interview_process:rawData.interviewProcess.replace(/->|→/g, " → "),
+
+        company_id: rawData.companyId,
+        company_name: rawData.company_name,
+        about_company: rawData.about_company,
+      };
+
+      setJob(transformedJob);
+    } catch (err) {
+      console.error("Error fetching job or company details:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchJobDetails();
+}, [params?.slug]);
+
+
 
     const handleProceedToInterview = () => {
       if (job) {
@@ -152,9 +207,9 @@
               </Badge>
             </div>
             <div className="flex flex-wrap gap-2 mb-4">
-              {job.job_roles.split(",").map((tag: string) => (
+              {job.tags.map((tag: string) => (
                 <Badge key={tag.trim()} variant="secondary" className="font-normal">
-                  {tag.trim()}
+                {tag.trim()}
                 </Badge>
               ))}
             </div>
@@ -215,17 +270,18 @@
           {/* Interview Process */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Interview Process</h2>
-              <ol className="space-y-4">
-                {job.interview_process.split("\n").map((step: string, index: number) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                      {index + 1}
-                    </div>
-                    <div className="text-muted-foreground">{step.substring(step.indexOf(".") + 1).trim()}</div>
-                  </li>
-                ))}
-              </ol>
+                            <h2 className="text-xl font-semibold mb-4">Interview Process</h2>
+<ol className="space-y-4">
+  {job.interview_process.split(/→|,/).map((step: string, index: number) => (
+    <li key={index} className="flex items-start gap-3">
+      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+        {index + 1}
+      </div>
+      <div className="text-muted-foreground">{step.trim().replace(/\.$/, "")}</div>
+    </li>
+  ))}
+</ol>
+
             </CardContent>
           </Card>
         </div>
