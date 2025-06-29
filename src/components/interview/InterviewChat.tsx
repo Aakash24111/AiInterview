@@ -21,26 +21,32 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
   const stompClientRef = useRef<Client | null>(null)
   const [connected, setConnected] = useState(false)
 
-  // Scroll to bottom on message update
+  // Auto-scroll on update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, wsMessages])
 
-  // WebSocket init
+  // WebSocket setup
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    const socket = new SockJS("http://localhost:8003/websocket")
-    
+    const token = localStorage.getItem("userToken") || ""
+    const socket = new SockJS(`http://localhost:8003/websocket?token=${token}`)
 
     const client = new Client({
       webSocketFactory: () => socket,
-      connectHeaders: {
-        Authorization: `Bearer ${token || ""}`,
-      },
-      reconnectDelay: 5000,
+      reconnectDelay: 3000,
       onConnect: () => {
+        console.log("🟢 WebSocket connected")
         setConnected(true)
-        // You may leave this empty or add a global fallback listener here if needed
+
+        client.subscribe("/user/queue/chat", (msg) => {
+          const backendMessage: InterviewMessage = {
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            message: msg.body,
+            timestamp: new Date().toISOString(),
+            sender: "interviewer",
+          }
+          setWsMessages((prev) => [...prev, backendMessage])
+        })
       },
     })
 
@@ -53,7 +59,7 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
   }, [])
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === "") return
+    if (!newMessage.trim()) return
 
     const userMessage: InterviewMessage = {
       id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -64,31 +70,26 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
 
     setWsMessages((prev) => [...prev, userMessage])
 
-    let responseReceived = false
-
     if (connected && stompClientRef.current) {
-      // One-time response listener
-      const subscription = stompClientRef.current.subscribe("/ai/response", (msg) => {
-        responseReceived = true
+      let responseReceived = false
 
+      const subscription = stompClientRef.current.subscribe("/user/queue/chat", (msg) => {
+        responseReceived = true
         const backendMessage: InterviewMessage = {
           id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           message: msg.body,
           timestamp: new Date().toISOString(),
           sender: "interviewer",
         }
-
         setWsMessages((prev) => [...prev, backendMessage])
         subscription.unsubscribe()
       })
 
-      // Send user message
       stompClientRef.current.publish({
         destination: "/app/chat",
         body: newMessage,
       })
 
-      // Fallback if backend doesn't respond
       setTimeout(() => {
         if (!responseReceived) {
           const fallbackMessage: InterviewMessage = {
@@ -101,6 +102,14 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
           subscription.unsubscribe()
         }
       }, 5000)
+    } else {
+      const fallbackMessage: InterviewMessage = {
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        message: "⚠️ Not connected to server.",
+        timestamp: new Date().toISOString(),
+        sender: "interviewer",
+      }
+      setWsMessages((prev) => [...prev, fallbackMessage])
     }
 
     setNewMessage("")
@@ -118,7 +127,9 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
           <div key={msg.id} className={`mb-4 flex ${msg.sender === "interviewer" ? "justify-start" : "justify-end"}`}>
             <div
               className={`max-w-[80%] rounded-lg p-3 ${
-                msg.sender === "interviewer" ? "bg-muted text-foreground" : "bg-primary text-primary-foreground"
+                msg.sender === "interviewer"
+                  ? "bg-muted text-foreground"
+                  : "bg-primary text-primary-foreground"
               }`}
             >
               <div className="flex flex-col">
