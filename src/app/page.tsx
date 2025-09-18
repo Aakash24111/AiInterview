@@ -83,51 +83,7 @@ export default function Home() {
                 your chances of landing your dream job.
               </p>
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                <SignedOut>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <SignInButton mode="modal">
-                      <Button
-                        size="lg"
-                        className="gap-2 bg-blue-600 hover:bg-blue-700"
-                        onClick={() => setUserRole("candidate")}
-                      >
-                        Sign In as Candidate <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </SignInButton>
-                    <SignInButton mode="modal">
-                      <Button
-                        size="lg"
-                        className="gap-2 bg-green-600 hover:bg-green-700"
-                        onClick={() => setUserRole("recruiter")}
-                      >
-                        Sign In as Recruiter <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </SignInButton>
-                  </div>
-                </SignedOut>
-                <SignedIn>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    {(userRole === "candidate" || userRole === null) && (
-                      <Button
-                        size="lg"
-                        onClick={() => router.push("/interview")}
-                        className="gap-2 bg-blue-600 hover:bg-blue-700"
-                      >
-                        Candidate Dashboard <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {(userRole === "recruiter" || userRole === null) && (
-                      <Button
-                        size="lg"
-                        onClick={() => router.push("/recruiter")}
-                        className="gap-2 bg-green-600 hover:bg-green-700"
-                      >
-                        Recruiter Dashboard <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </SignedIn>
-                <Button variant="outline" size="lg" asChild className="mt-4 sm:mt-0">
+                <Button variant="outline" size="lg" asChild className="mt-0">
                   <a href="#how-it-works">Learn More</a>
                 </Button>
               </div>
@@ -354,24 +310,7 @@ export default function Home() {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <SignedOut>
-                      <div className="w-full space-y-2">
-                        <SignInButton mode="modal">
-                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
-                            Sign In as Candidate
-                          </Button>
-                        </SignInButton>
-                        <SignInButton mode="modal">
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            onClick={() => setUserRole("recruiter")}
-                          >
-                            Sign In as Recruiter
-                          </Button>
-                        </SignInButton>
-                      </div>
-                    </SignedOut>
-                    <SignedIn>
+                    {/* Auth UI removed */}
                       <div className="w-full space-y-2">
                         {(userRole === "candidate" || userRole === null) && (
                           <Button className="w-full" onClick={() => router.push("/interview")}>
@@ -387,7 +326,6 @@ export default function Home() {
                           </Button>
                         )}
                       </div>
-                    </SignedIn>
                   </CardFooter>
                 </Card>
 
@@ -427,24 +365,7 @@ export default function Home() {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <SignedOut>
-                      <div className="w-full space-y-2">
-                        <SignInButton mode="modal">
-                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
-                            Sign In as Candidate
-                          </Button>
-                        </SignInButton>
-                        <SignInButton mode="modal">
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            onClick={() => setUserRole("recruiter")}
-                          >
-                            Sign In as Recruiter
-                          </Button>
-                        </SignInButton>
-                      </div>
-                    </SignedOut>
-                    <SignedIn>
+                    {/* Auth UI removed */}
                       <div className="w-full space-y-2">
                         {(userRole === "candidate" || userRole === null) && (
                           <Button className="w-full" onClick={() => router.push("/interview?plan=pro")}>
@@ -460,7 +381,6 @@ export default function Home() {
                           </Button>
                         )}
                       </div>
-                    </SignedIn>
                   </CardFooter>
                 </Card>
 
@@ -501,24 +421,7 @@ export default function Home() {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <SignedOut>
-                      <div className="w-full space-y-2">
-                        <SignInButton mode="modal">
-                          <Button className="w-full" onClick={() => setUserRole("candidate")}>
-                            Sign In as Candidate
-                          </Button>
-                        </SignInButton>
-                        <SignInButton mode="modal">
-                          <Button
-                            className="w-full bg-green-600 hover:bg-green-700"
-                            onClick={() => setUserRole("recruiter")}
-                          >
-                            Sign In as Recruiter
-                          </Button>
-                        </SignInButton>
-                      </div>
-                    </SignedOut>
-                    <SignedIn>
+                    {/* Auth UI removed */}
                       <div className="w-full space-y-2">
                         {(userRole === "candidate" || userRole === null) && (
                           <Button className="w-full" onClick={() => router.push("/interview?plan=enterprise")}>
@@ -534,7 +437,6 @@ export default function Home() {
                           </Button>
                         )}
                       </div>
-                    </SignedIn>
                   </CardFooter>
                 </Card>
               </div>

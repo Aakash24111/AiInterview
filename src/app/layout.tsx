@@ -1,12 +1,5 @@
 import type { Metadata } from "next";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
+import AuthHeader from "@/components/AuthHeader";
 import { Geist, Geist_Mono } from "next/font/google";
 import SliderToggle from "@/components/SlidderToggle"; // Import Toggle
 import "./globals.css";
@@ -32,24 +25,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
-          <header className="flex justify-end p-4 gap-4 h-16">
-            <SliderToggle /> 
-            <div className="flex gap-4">
-              <SignedOut>
-                <SignInButton/>
-                <SignUpButton/>
-              </SignedOut>
-              <SignedIn >
-                <UserButton />
-              </SignedIn>
-            </div>
-          </header>
-          <main className="flex-grow">{children}</main>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
+        <header className="flex justify-end p-4 gap-4 h-16">
+          <SliderToggle />
+          <AuthHeader />
+        </header>
+        <main className="flex-grow">{children}</main>
+      </body>
+    </html>
   );
 }

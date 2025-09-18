@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import InterviewComponent from "@/components/interview/InterviewComponent"
-import { jobsData } from "@/components/interview/data"
 import type { Job } from "@/components/interview/types"
 
 export default function InterviewPage({ params }: { params: { id: string } }) {
@@ -20,15 +19,67 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   }, [])
 
   useEffect(() => {
-    // In a real app, you would fetch the job details from an API
-    const jobId = Number.parseInt(params.id)
-    const foundJob = jobsData.find((job) => job.id === jobId)
+    async function fetchJobAndCompany() {
+      try {
+        const token = localStorage.getItem("userToken")
+        if (!token) throw new Error("User token not found")
 
-    if (foundJob) {
-      setJob(foundJob)
+        const jobId = params.id
+
+        // Fetch job details
+        const jobRes = await fetch(`http://localhost:8001/job_service/getJobById/${jobId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        })
+        if (!jobRes.ok) throw new Error("Failed to fetch job")
+        const raw = await jobRes.json()
+
+        // Optionally fetch company
+        let companyName = "Unknown Company"
+        try {
+          if (raw.companyId) {
+            const companyRes = await fetch(`http://localhost:8002/company/companyDetails/${raw.companyId}`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            })
+            if (companyRes.ok) {
+              const company = await companyRes.json()
+              companyName = company.companyName || companyName
+            }
+          }
+        } catch {
+          // ignore company fetch errors
+        }
+
+        const mapped: Job = {
+          id: raw.jobId,
+          companyLogo: "/placeholder.svg",
+          jobTitle: raw.jobTitle,
+          companyName: companyName,
+          experience: `${raw.experienceRequired} years`,
+          salary: `${raw.salaryRange}`,
+          jobType: raw.jobType?.charAt(0).toUpperCase() + raw.jobType?.slice(1),
+          location: raw.location,
+          tags: Array.isArray(raw.tags) ? raw.tags : (typeof raw.tags === "string" ? raw.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : []),
+        }
+
+        setJob(mapped)
+      } catch (e) {
+        console.error("Error setting up interview:", e)
+        setJob(null)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setLoading(false)
+    fetchJobAndCompany()
   }, [params.id])
 
   if (loading) {
@@ -67,3 +118,4 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   return <InterviewComponent job={job} />
 }
 
+ 

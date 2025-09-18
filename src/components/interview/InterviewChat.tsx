@@ -17,9 +17,13 @@ interface InterviewChatProps {
 export default function InterviewChat({ messages, onSendMessage, isTyping }: InterviewChatProps) {
   const [newMessage, setNewMessage] = useState("")
   const [wsMessages, setWsMessages] = useState<InterviewMessage[]>([])
+  const [waitingForResponse, setWaitingForResponse] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const stompClientRef = useRef<Client | null>(null)
   const [connected, setConnected] = useState(false)
+  const didInitRef = useRef(false)
+
+  const generateId = () => (typeof crypto !== "undefined" && (crypto as any)?.randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`)
 
   // Auto-scroll on update
   useEffect(() => {
@@ -28,33 +32,64 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
 
   // WebSocket setup
   useEffect(() => {
+    if (didInitRef.current) return
+    didInitRef.current = true
     const token = localStorage.getItem("userToken") || ""
-    const socket = new SockJS(`http://localhost:8003/websocket?token=${token}`)
+    const wsUrl = `http://localhost:8003/websocket?token=${token}`
+    console.log("🔌 Initializing SockJS:", wsUrl)
+    const socket = new SockJS(wsUrl)
 
     const client = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 3000,
+      debug: (str) => console.log("STOMP debug:", str),
       onConnect: () => {
         console.log("🟢 WebSocket connected")
         setConnected(true)
 
         client.subscribe("/user/queue/chat", (msg) => {
+          console.log("📥 Received (global subscribe):", msg.body)
           const backendMessage: InterviewMessage = {
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            id: generateId(),
             message: msg.body,
             timestamp: new Date().toISOString(),
             sender: "interviewer",
           }
           setWsMessages((prev) => [...prev, backendMessage])
+          setWaitingForResponse(false)
         })
+      },
+      onDisconnect: () => {
+        console.warn("🟡 WebSocket disconnected")
+        setConnected(false)
+      },
+      onStompError: (frame) => {
+        console.error("❌ STOMP error:", frame.headers?.message, frame.body)
+      },
+      onWebSocketError: (event) => {
+        console.error("❌ WebSocket error:", event)
       },
     })
 
     stompClientRef.current = client
-    client.activate()
+    try {
+      client.activate()
+    } catch (e) {
+      console.error("❌ Failed to activate STOMP client:", e)
+    }
+
+    const handleUnload = () => {
+      try {
+        if (stompClientRef.current?.active) {
+          stompClientRef.current.deactivate()
+        }
+      } catch {}
+    }
+    window.addEventListener("beforeunload", handleUnload)
 
     return () => {
-      client.deactivate()
+      window.removeEventListener("beforeunload", handleUnload)
+      // Do not deactivate here to avoid React StrictMode double-invocation disconnecting the client
     }
   }, [])
 
@@ -62,19 +97,18 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
     if (!newMessage.trim()) return
 
     const userMessage: InterviewMessage = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateId(),
       message: newMessage,
       timestamp: new Date().toISOString(),
       sender: "user",
     }
 
     setWsMessages((prev) => [...prev, userMessage])
+    setWaitingForResponse(true)
 
     if (connected && stompClientRef.current) {
-      let responseReceived = false
-
       const subscription = stompClientRef.current.subscribe("/user/queue/chat", (msg) => {
-        responseReceived = true
+        console.log("📥 Received (send-cycle subscribe):", msg.body)
         const backendMessage: InterviewMessage = {
           id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           message: msg.body,
@@ -82,6 +116,7 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
           sender: "interviewer",
         }
         setWsMessages((prev) => [...prev, backendMessage])
+        setWaitingForResponse(false)
         subscription.unsubscribe()
       })
 
@@ -90,21 +125,10 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
         body: newMessage,
       })
 
-      setTimeout(() => {
-        if (!responseReceived) {
-          const fallbackMessage: InterviewMessage = {
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            message: "⚠️ No response from backend.",
-            timestamp: new Date().toISOString(),
-            sender: "interviewer",
-          }
-          setWsMessages((prev) => [...prev, fallbackMessage])
-          subscription.unsubscribe()
-        }
-      }, 5000)
+      // Wait indefinitely for backend response; no timeout
     } else {
       const fallbackMessage: InterviewMessage = {
-        id: `${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        id: generateId(),
         message: "⚠️ Not connected to server.",
         timestamp: new Date().toISOString(),
         sender: "interviewer",
@@ -139,13 +163,16 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
             </div>
           </div>
         ))}
-        {isTyping && (
+        {(isTyping || waitingForResponse) && (
           <div className="mb-4 flex justify-start">
             <div className="max-w-[80%] rounded-lg p-3 bg-muted text-foreground">
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse"></div>
-                <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-150"></div>
-                <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse delay-300"></div>
+                <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse [animation-delay:150ms]"></div>
+                <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse [animation-delay:300ms]"></div>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  {waitingForResponse ? "Waiting for interviewer..." : "Interviewer is typing..."}
+                </span>
               </div>
             </div>
           </div>
