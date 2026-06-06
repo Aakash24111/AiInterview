@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -33,6 +33,49 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import RecruiterLayout from "@/components/recruiter/layout"
+import { getToken, isTokenExpired, logoutOnExpiry } from "@/lib/auth"
+import { formatDate } from "@/lib/dateUtils"
+import { useTokenExpiry } from "@/hooks/useTokenExpiry"
+import AuthGuard from "@/components/AuthGuard"
+
+// TypeScript interfaces for job data
+interface JobData {
+  jobId: number
+  jobTitle: string
+  department: string
+  location: string
+  jobType: string
+  experienceRequired: string
+  salaryRange: string
+  applicationDeadline: string
+  createdAt: string
+  status: string
+  teamSize: string
+  tags: string[]
+  remoteWorkAvailable: boolean
+  urgentHiring: boolean
+  publishImmediately: boolean
+  jobDescription: string
+  responsibilities: string
+  requirements: string
+  benefits: string
+  interviewProcess: string
+  companyId: number
+  // Display fields for hybrid data
+  displayTitle?: string
+  displayDepartment?: string
+  displayLocation?: string
+  displayType?: string
+  displayStatus?: string
+  displayDatePosted?: string
+  applicants?: number
+}
+
+interface JobsResponse {
+  topJobs: JobData[]
+  jobCount: number
+  jobServiceList: JobData[]
+}
 
 // Sample data for jobs
 const jobsData = [
@@ -151,33 +194,151 @@ export default function RecruiterDashboard() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
-  const [totalJobs, setTotalJobs] = useState(jobsData.length)
+  const [jobs, setJobs] = useState<JobData[]>([])
+  const [totalJobs, setTotalJobs] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isClient, setIsClient] = useState(false)
+
+  // Check token expiry periodically
+  useTokenExpiry()
+
+  // Set client-side flag to prevent hydration issues
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Fetch jobs data from API
+  useEffect(() => {
+    if (!isClient) return
+    
+    const fetchJobs = async () => {
+      try {
+        setLoading(true)
+        const token = getToken()
+        if (!token) {
+          setError("No authentication token found")
+          return
+        }
+
+        const response = await fetch("http://localhost:8001/job_service/getcount", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch jobs: ${response.statusText}`)
+        }
+
+        const data: JobsResponse = await response.json()
+        
+        // Map API data to display format, combining with static data where needed
+        const mappedJobs = (data.jobServiceList || []).map((apiJob, index) => {
+          // Use corresponding static job data for fields not in API
+          const staticJob = jobsData[index] || jobsData[0] || {
+            id: apiJob.jobId,
+            title: apiJob.jobTitle,
+            department: apiJob.department,
+            location: apiJob.location,
+            type: apiJob.jobType,
+            applicants: 0,
+            status: apiJob.status.toLowerCase(),
+            datePosted: apiJob.createdAt
+          }
+          
+          return {
+            ...apiJob,
+            // Override with static data for display purposes
+            displayTitle: apiJob.jobTitle,
+            displayDepartment: apiJob.department,
+            displayLocation: apiJob.location,
+            displayType: apiJob.jobType,
+            displayStatus: apiJob.status,
+            displayDatePosted: apiJob.createdAt,
+            // Keep static data for fields not in API
+            applicants: staticJob.applicants || 0,
+            // Use API data for other fields
+            salaryRange: apiJob.salaryRange,
+            experienceRequired: apiJob.experienceRequired,
+            applicationDeadline: apiJob.applicationDeadline,
+            tags: apiJob.tags,
+            remoteWorkAvailable: apiJob.remoteWorkAvailable,
+            urgentHiring: apiJob.urgentHiring
+          }
+        })
+        
+        setJobs(mappedJobs)
+        setTotalJobs(data.jobCount || 0)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching jobs:", err)
+        setError(err instanceof Error ? err.message : "Failed to fetch jobs")
+        // Fallback to sample data on error
+        setJobs(jobsData.map(job => ({
+          jobId: job.id,
+          jobTitle: job.title,
+          department: job.department,
+          location: job.location,
+          jobType: job.type,
+          experienceRequired: "Not specified",
+          salaryRange: "Not specified",
+          applicationDeadline: "Not specified",
+          createdAt: job.datePosted,
+          status: job.status.toUpperCase(),
+          teamSize: "Not specified",
+          tags: [],
+          remoteWorkAvailable: false,
+          urgentHiring: false,
+          publishImmediately: true,
+          jobDescription: "Job description not available",
+          responsibilities: "Responsibilities not specified",
+          requirements: "Requirements not specified",
+          benefits: "Benefits not specified",
+          interviewProcess: "Interview process not specified",
+          companyId: 1
+        })))
+        setTotalJobs(jobsData.length)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchJobs()
+  }, [isClient])
 
   // Filter jobs based on active tab and search query
-  const filteredJobs = jobsData.filter((job) => {
+  const filteredJobs = jobs.filter((job) => {
+    const title = job.displayTitle || job.jobTitle
+    const department = job.displayDepartment || job.department
+    const location = job.displayLocation || job.location
+    const status = job.displayStatus || job.status
+    
     const matchesSearch =
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.location.toLowerCase().includes(searchQuery.toLowerCase())
+      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      location.toLowerCase().includes(searchQuery.toLowerCase())
 
     if (activeTab === "all") return matchesSearch
-    if (activeTab === "active") return job.status === "active" && matchesSearch
-    if (activeTab === "draft") return job.status === "draft" && matchesSearch
-    if (activeTab === "closed") return job.status === "closed" && matchesSearch
+    if (activeTab === "active") return status === "ACTIVE" && matchesSearch
+    if (activeTab === "draft") return status === "DRAFT" && matchesSearch
+    if (activeTab === "closed") return status === "CLOSED" && matchesSearch
 
     return matchesSearch
   })
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "active":
+    switch (status.toUpperCase()) {
+      case "ACTIVE":
         return <Badge className="bg-green-500">Active</Badge>
-      case "draft":
+      case "DRAFT":
         return <Badge variant="outline">Draft</Badge>
-      case "closed":
+      case "CLOSED":
         return <Badge variant="secondary">Closed</Badge>
       default:
-        return null
+        return <Badge variant="outline">{status}</Badge>
     }
   }
 
@@ -203,8 +364,9 @@ export default function RecruiterDashboard() {
   }
 
   return (
-    <RecruiterLayout>
-      <div className="flex flex-col gap-6">
+    <AuthGuard requireAuth={true} allowedRoles={['COMPANY']}>
+      <RecruiterLayout>
+        <div className="flex flex-col gap-6">
         {/* Dashboard header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -331,28 +493,36 @@ export default function RecruiterDashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredJobs.length > 0 ? (
+                  {!isClient || loading ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        {!isClient ? "Loading..." : "Loading jobs..."}
+                      </TableCell>
+                    </TableRow>
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-red-500">
+                        Error: {error}
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredJobs.length > 0 ? (
                     filteredJobs.map((job) => (
-                      <TableRow key={job.id}>
-                        <TableCell className="font-medium">{job.title}</TableCell>
-                        <TableCell>{job.department}</TableCell>
-                        <TableCell>{job.location}</TableCell>
-                        <TableCell>{job.type}</TableCell>
+                      <TableRow key={job.jobId}>
+                        <TableCell className="font-medium">{job.displayTitle || job.jobTitle}</TableCell>
+                        <TableCell>{job.displayDepartment || job.department}</TableCell>
+                        <TableCell>{job.displayLocation || job.location}</TableCell>
+                        <TableCell>{job.displayType || job.jobType}</TableCell>
                         <TableCell>
                           <Link
-                            href={`/recruiter/dashboard/candidates/${job.id}`}
+                            href={`/recruiter/dashboard/candidates/${job.jobId}`}
                             className="text-primary hover:underline"
                           >
-                            {job.applicants}
+                            {job.applicants || 0}
                           </Link>
                         </TableCell>
-                        <TableCell>{getStatusBadge(job.status)}</TableCell>
+                        <TableCell>{getStatusBadge(job.displayStatus || job.status)}</TableCell>
                         <TableCell>
-                          {new Date(job.datePosted).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "numeric",
-                            day: "numeric",
-                          })}
+                          {formatDate(job.displayDatePosted || job.createdAt)}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -365,18 +535,18 @@ export default function RecruiterDashboard() {
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => router.push(`/recruiter/dashboard/candidates/${job.id}`)}
+                                onClick={() => router.push(`/recruiter/dashboard/candidates/${job.jobId}`)}
                               >
                                 <Users className="mr-2 h-4 w-4" />
                                 View Candidates
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/recruiter/dashboard/edit/${job.id}`)}>
+                              <DropdownMenuItem onClick={() => router.push(`/recruiter/dashboard/edit/${job.jobId}`)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit Job
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  router.push(`/job/${job.title.toLowerCase().replace(/ /g, "-")}-company`)
+                                  router.push(`/job/${(job.displayTitle || job.jobTitle).toLowerCase().replace(/ /g, "-")}-company`)
                                 }
                               >
                                 <Eye className="mr-2 h-4 w-4" />
@@ -479,6 +649,7 @@ export default function RecruiterDashboard() {
         </Card>
       </div>
     </RecruiterLayout>
+    </AuthGuard>
   )
 }
 

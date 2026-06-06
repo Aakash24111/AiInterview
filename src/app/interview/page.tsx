@@ -6,6 +6,7 @@ import SearchBar from "@/components/search-bar";
 import FilterSection from "@/components/filter-section";
 import { Button } from "@/components/ui/button";
 import { Briefcase } from "lucide-react";
+import AuthGuard from "@/components/AuthGuard";
 
 // Define interfaces for better type safety
 interface Job {
@@ -197,8 +198,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4 md:px-6">
+    <AuthGuard requireAuth={true} allowedRoles={['USER', 'CANDIDATE']}>
+      <main className="min-h-screen bg-background">
+        <div className="container mx-auto py-8 px-4 md:px-6">
         <div className="mb-8">
           <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
         </div>
@@ -225,6 +227,7 @@ export default function Home() {
                     id={job.jobId}
                     jobTitle={job.jobTitle}
                     companyName={`Company ${job.company_name}`}
+                    companyLogo="/placeholder.svg"
                     experience={job.experienceRequired}
                     salary={job.salaryRange}
                     jobType={job.jobType}
@@ -243,5 +246,6 @@ export default function Home() {
         </div>
       </div>
     </main>
+    </AuthGuard>
   );
 }

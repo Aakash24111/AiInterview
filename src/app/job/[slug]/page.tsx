@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { getToken, isTokenExpired, logoutOnExpiry, decodeToken } from "@/lib/auth";
+import { useTokenExpiryOnMount } from "@/hooks/useTokenExpiry";
+import AuthGuard from "@/components/AuthGuard";
 import {
   ArrowLeft,
   Building,
@@ -47,6 +50,9 @@ export default function JobDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Check token expiry on component mount
+  useTokenExpiryOnMount();
+
   useEffect(() => {
 if (!params?.slug) return;
 
@@ -54,9 +60,28 @@ async function fetchJobDetails() {
   try {
     const jobId = params.slug;
 
-    // Step 1: Get token
-    const token = localStorage.getItem("userToken");
+    // Step 1: Get token and check expiration
+    const token = getToken();
+    console.log("Token being sent with API calls:", token);
     if (!token) throw new Error("User token not found in localStorage");
+    
+    // Read all data from token payload
+    const tokenData = decodeToken(token);
+    console.log("All readable data from token:", {
+      username: tokenData?.sub,
+      role: tokenData?.role,
+      tokenFrom: tokenData?.tokenFrom,
+      issuedAt: new Date(tokenData?.iat * 1000).toLocaleString(),
+      expiresAt: new Date(tokenData?.exp * 1000).toLocaleString(),
+      timeUntilExpiry: Math.round((tokenData?.exp * 1000 - Date.now()) / 1000 / 60) + " minutes"
+    });
+    
+    // Check if token is expired and logout if so
+    if (isTokenExpired(token)) {
+      console.log("Token has expired, logging out...");
+      logoutOnExpiry();
+      return;
+    }
 
     // Step 2: Fetch job
     const jobResponse = await fetch(`http://localhost:8001/job_service/getJobById/${jobId}`, {
@@ -104,6 +129,7 @@ try {
     // Step 4: Transform job
     const transformedJob: Job = {
       job_id: rawData.jobId,
+      job_roles: rawData.jobTitle, // Map job title to job_roles
       job_title: rawData.jobTitle,
       job_location: rawData.location,
       job_type: rawData.jobType.charAt(0).toUpperCase() + rawData.jobType.slice(1),
@@ -179,10 +205,11 @@ fetchJobDetails();
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-6">
-    <Button variant="ghost" onClick={() => router.back()} className="mb-6">
-      <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
-    </Button>
+    <AuthGuard requireAuth={true}>
+      <div className="container mx-auto py-8 px-4 md:px-6">
+      <Button variant="ghost" onClick={() => router.back()} className="mb-6">
+        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Jobs
+      </Button>
 
     {/* Job Header */}
     <div className="bg-card rounded-lg shadow-sm border p-6 mb-6">
@@ -365,5 +392,6 @@ fetchJobDetails();
       </div>
     </div>
   </div>
-)
+    </AuthGuard>
+  )
 }

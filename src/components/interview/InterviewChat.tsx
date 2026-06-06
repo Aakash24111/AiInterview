@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import SockJS from "sockjs-client"
 import { Client } from "@stomp/stompjs"
 import type { InterviewMessage } from "./types"
+import { getToken } from "@/lib/auth"
 
 interface InterviewChatProps {
   messages: InterviewMessage[]
@@ -34,7 +35,7 @@ export default function InterviewChat({ messages, onSendMessage, isTyping }: Int
   useEffect(() => {
     if (didInitRef.current) return
     didInitRef.current = true
-    const token = localStorage.getItem("userToken") || ""
+    const token = getToken() || ""
     const wsUrl = `http://localhost:8003/websocket?token=${token}`
     console.log("🔌 Initializing SockJS:", wsUrl)
     const socket = new SockJS(wsUrl)

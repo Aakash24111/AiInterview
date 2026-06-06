@@ -35,6 +35,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import RecruiterLayout from "@/components/recruiter/layout"
+import { formatDate } from "@/lib/dateUtils"
+import AuthGuard from "@/components/AuthGuard"
 
 // Add dialog for Hire and Reject buttons
 // Add these imports at the top
@@ -195,8 +197,9 @@ export default function CandidateReport({ params }: { params: { candidateId: str
   }
 
   return (
-    <RecruiterLayout>
-      <div className="flex flex-col gap-6">
+    <AuthGuard requireAuth={true} allowedRoles={['COMPANY']}>
+      <RecruiterLayout>
+        <div className="flex flex-col gap-6">
         {/* Page header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -270,12 +273,12 @@ export default function CandidateReport({ params }: { params: { candidateId: str
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Applied: {new Date(candidateData.appliedDate).toLocaleDateString()}</span>
+                    <span className="text-sm">Applied: {formatDate(candidateData.appliedDate)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
-                      Interviewed: {new Date(candidateData.interviewDate).toLocaleDateString()}
+                      Interviewed: {formatDate(candidateData.interviewDate)}
                     </span>
                   </div>
                 </div>
@@ -746,6 +749,7 @@ export default function CandidateReport({ params }: { params: { candidateId: str
         </AlertDialog>
       </div>
     </RecruiterLayout>
+    </AuthGuard>
   )
 }
 

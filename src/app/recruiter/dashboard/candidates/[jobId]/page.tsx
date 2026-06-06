@@ -32,6 +32,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import RecruiterLayout from "@/components/recruiter/layout"
+import { formatDate } from "@/lib/dateUtils"
+import AuthGuard from "@/components/AuthGuard"
 
 // Sample job data
 const jobData = {
@@ -206,8 +208,9 @@ export default function CandidatesPage({ params }: { params: { jobId: string } }
   }
 
   return (
-    <RecruiterLayout>
-      <div className="flex flex-col gap-6">
+    <AuthGuard requireAuth={true} allowedRoles={['COMPANY']}>
+      <RecruiterLayout>
+        <div className="flex flex-col gap-6">
         {/* Page header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -375,7 +378,7 @@ export default function CandidatesPage({ params }: { params: { jobId: string } }
                             <span className="text-muted-foreground">N/A</span>
                           )}
                         </TableCell>
-                        <TableCell>{new Date(candidate.appliedDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{formatDate(candidate.appliedDate)}</TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {candidate.tags.slice(0, 2).map((tag) => (
@@ -442,6 +445,7 @@ export default function CandidatesPage({ params }: { params: { jobId: string } }
         </Card>
       </div>
     </RecruiterLayout>
+    </AuthGuard>
   )
 }
 

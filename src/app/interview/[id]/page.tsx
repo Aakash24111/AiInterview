@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { getToken } from "@/lib/auth"
+import AuthGuard from "@/components/AuthGuard"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import InterviewComponent from "@/components/interview/InterviewComponent"
@@ -21,7 +23,7 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchJobAndCompany() {
       try {
-        const token = localStorage.getItem("userToken")
+        const token = getToken()
         if (!token) throw new Error("User token not found")
 
         const jobId = params.id
@@ -115,7 +117,11 @@ export default function InterviewPage({ params }: { params: { id: string } }) {
     return null
   }
 
-  return <InterviewComponent job={job} />
+  return (
+    <AuthGuard requireAuth={true} allowedRoles={['USER', 'CANDIDATE']}>
+      <InterviewComponent job={job} />
+    </AuthGuard>
+  )
 }
 
  
