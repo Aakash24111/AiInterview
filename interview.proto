@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option java_package = "com.interview.chat"; // Match your package
+option java_multiple_files = true;
+option java_outer_classname = "InterviewChatOuterClass";
+
+service InterviewChat {
+  rpc getResponse(stream Message) returns (stream Response);
+}
+
+message Message {
+  string message = 1;
+}
+
+message Response {
+  string responseLLM = 1;
+}
